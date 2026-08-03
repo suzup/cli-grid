@@ -28,25 +28,27 @@ jobs:
           npm run lint
 
       - name: Package
-        run: npx vsce package --no-dependencies -o agent-grid.vsix
+        run: npx vsce package --no-dependencies -o agentry.vsix
 
       # Attach the .vsix so people can install without a marketplace account.
       - name: Attach to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: agent-grid.vsix
+          files: agentry.vsix
           generate_release_notes: true
 
-      # Both marketplaces are optional: the step is skipped when its token is
-      # not configured, so a fork can still cut releases.
+      # Both registries are optional, so a fork can still cut releases. The
+      # condition reads `secrets` directly: a step cannot see its own `env` in
+      # `if`, which would silently skip publishing even with the token set.
+      #
+      # Open VSX comes first because it needs nothing but a GitHub login, while
+      # the VS Code Marketplace needs an Azure subscription.
+      - name: Publish to Open VSX
+        if: ${{ secrets.OVSX_PAT != '' }}
+        run: npx ovsx publish agentry.vsix --pat "${{ secrets.OVSX_PAT }}"
+
       - name: Publish to the VS Code Marketplace
-        if: env.VSCE_PAT != ''
+        if: ${{ secrets.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx vsce publish --no-dependencies --packagePath agent-grid.vsix
-
-      - name: Publish to Open VSX
-        if: env.OVSX_PAT != ''
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: npx ovsx publish agent-grid.vsix --pat "$OVSX_PAT"
+        run: npx vsce publish --no-dependencies --packagePath agentry.vsix

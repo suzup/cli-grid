@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 /**
  * Minimal shape of the built-in Git extension's exported API.
  *
- * Only the members Agent Grid reads are declared, so a change elsewhere in
+ * Only the members Agentry reads are declared, so a change elsewhere in
  * `git.d.ts` cannot break the build.
  */
 interface GitExtensionExports {
@@ -42,7 +42,7 @@ export interface RepoSummary {
 
 /**
  * Reads branch and change counts from the built-in Git extension rather than
- * shelling out, so Agent Grid stays consistent with what the SCM view shows.
+ * shelling out, so Agentry stays consistent with what the SCM view shows.
  */
 export class GitStatus implements vscode.Disposable {
   private api: GitApi | undefined;

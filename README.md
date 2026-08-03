@@ -1,15 +1,15 @@
-# Agent Grid
+# Agentry
 
 Run several CLI coding agents side by side — Claude Code, Codex, Gemini CLI —
 without losing track of which repository each one is sitting in.
 
 VS Code already has a file tree, git decorations, a terminal grid and per-folder
-configuration. Agent Grid does not rebuild any of that. It supplies the thin
+configuration. Agentry does not rebuild any of that. It supplies the thin
 layer those pieces are missing: a binding between **an agent, a folder and a
 pane**.
 
 ```
-┌ AGENT GRID ─────────┬──────────────────┬──────────────────┐
+┌ AGENTRY ────────────┬──────────────────┬──────────────────┐
 │ ▾ AGENTS       + ⟳  │ ✨ Claude · api   │ 🚀 Codex · api    │
 │  ▾ work    main ↑2  │                  │                  │
 │    ✨ Claude  running│                  │                  │
@@ -50,15 +50,15 @@ up again tomorrow.
 
 ## How it is configured
 
-Agent Grid is configured **per folder**, the same way `.vscode/settings.json` is.
+Agentry is configured **per folder**, the same way `.vscode/settings.json` is.
 There is nothing to name, nothing stored elsewhere, and nothing to find again.
 
 ```
 File › Open Folder...   ~/work
 ```
 
-Click the Agent Grid icon in the Activity Bar, make the folder a project, then
-add agents. That writes `.vscode/agent-grid.json`:
+Click the Agentry icon in the Activity Bar, make the folder a project, then
+add agents. That writes `.vscode/agentry.json`:
 
 ```jsonc
 {
@@ -81,12 +81,12 @@ opening a parent directory full of repositories the natural shape. An absolute
 path works too, for a repository that lives somewhere else entirely.
 
 Agents are listed but **not started** until you select them, so opening a folder
-never launches a CLI you did not ask for. Set `agentGrid.autoStart` for the
+never launches a CLI you did not ask for. Set `agentry.autoStart` for the
 opposite.
 
 ## New vs resume
 
-Agent Grid does not manage conversation state. It only chooses which arguments
+Agentry does not manage conversation state. It only chooses which arguments
 to pass; the CLI owns everything after that.
 
 | CLI | new | resume |
@@ -96,7 +96,7 @@ to pass; the CLI owns everything after that.
 | Gemini | `gemini` | `gemini --resume` |
 
 `Enter` uses the default mode; the **🕘 / +** button on each row uses the other
-one. Change the default with `agentGrid.defaultMode`, per profile, or per agent
+one. Change the default with `agentry.defaultMode`, per profile, or per agent
 via `"mode"` in the project file.
 
 Defaults ship as `new` because `claude --continue` exits with an error in a
@@ -104,11 +104,11 @@ folder that has no previous conversation.
 
 ## Custom CLIs
 
-`agentGrid.profiles` is merged over the built-ins. Arguments are passed through
+`agentry.profiles` is merged over the built-ins. Arguments are passed through
 untouched, so anything the CLI accepts works here.
 
 ```jsonc
-"agentGrid.profiles": {
+"agentry.profiles": {
   "claude": {
     "args": { "new": ["--model", "opus"], "resume": ["--continue"] },
     "defaultMode": "resume"
@@ -134,12 +134,12 @@ terminals start on the remote machine.
 
 | Setting | Default | |
 | --- | --- | --- |
-| `agentGrid.defaultMode` | `new` | `new` or `resume` |
-| `agentGrid.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
-| `agentGrid.autoStart` | `false` | Start the folder's agents as soon as it opens |
-| `agentGrid.revealOnFocus` | `true` | Point the Files view at the selected agent's folder |
-| `agentGrid.showHiddenFiles` | `false` | Show dotfiles in the Files view |
-| `agentGrid.profiles` | `{}` | Merged over the built-in CLI profiles |
+| `agentry.defaultMode` | `new` | `new` or `resume` |
+| `agentry.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
+| `agentry.autoStart` | `false` | Start the folder's agents as soon as it opens |
+| `agentry.revealOnFocus` | `true` | Point the Files view at the selected agent's folder |
+| `agentry.showHiddenFiles` | `false` | Show dotfiles in the Files view |
+| `agentry.profiles` | `{}` | Merged over the built-in CLI profiles |
 
 ## Development
 

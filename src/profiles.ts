@@ -55,7 +55,7 @@ interface ProfileOverride {
 
 export function readProfiles(): AgentProfile[] {
   const overrides = vscode.workspace
-    .getConfiguration('agentGrid')
+    .getConfiguration('agentry')
     .get<Record<string, ProfileOverride>>('profiles', {});
 
   const merged = new Map<string, AgentProfile>();
@@ -92,7 +92,7 @@ export function findProfile(id: string): AgentProfile | undefined {
 
 export function defaultMode(profile: AgentProfile): LaunchMode {
   const global = vscode.workspace
-    .getConfiguration('agentGrid')
+    .getConfiguration('agentry')
     .get<LaunchMode>('defaultMode', 'new');
   return profile.defaultMode ?? global;
 }

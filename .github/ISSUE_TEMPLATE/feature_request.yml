@@ -23,7 +23,7 @@ body:
     attributes:
       label: Scope check
       description: >
-        Agent Grid deliberately stays out of the CLIs' way. It launches them and
+        Agentry deliberately stays out of the CLIs' way. It launches them and
         keeps track of which folder each one is in; it does not manage
         conversations, sessions or model settings.
       options:

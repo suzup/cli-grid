@@ -1,9 +1,9 @@
 {
-  "name": "agent-grid",
-  "displayName": "Agent Grid",
-  "description": "Run Claude Code, Codex and Gemini CLI side by side, configured per folder, with the file tree and git status always in view.",
+  "name": "agentry",
+  "displayName": "Agentry",
+  "description": "Run Claude Code, Codex and Gemini CLI side by side, configured per folder, with your files and git beside them.",
   "version": "0.1.0",
-  "publisher": "gbun",
+  "publisher": "suzup",
   "license": "MIT",
   "engines": {
     "vscode": "^1.90.0"
@@ -23,223 +23,223 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gbun/agent-grid.git"
+    "url": "https://github.com/suzup/agentry.git"
   },
   "extensionKind": [
     "workspace"
   ],
   "activationEvents": [
     "onStartupFinished",
-    "workspaceContains:.vscode/agent-grid.json"
+    "workspaceContains:.vscode/agentry.json"
   ],
   "main": "./dist/extension.js",
   "l10n": "./l10n",
   "contributes": {
     "commands": [
       {
-        "command": "agentGrid.initProject",
+        "command": "agentry.initProject",
         "title": "%cmd.initProject%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(new-folder)"
       },
       {
-        "command": "agentGrid.newAgent",
+        "command": "agentry.newAgent",
         "title": "%cmd.newAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(add)"
       },
       {
-        "command": "agentGrid.startAgent",
+        "command": "agentry.startAgent",
         "title": "%cmd.startAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(debug-start)"
       },
       {
-        "command": "agentGrid.startAll",
+        "command": "agentry.startAll",
         "title": "%cmd.startAll%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(run-all)"
       },
       {
-        "command": "agentGrid.stopAgent",
+        "command": "agentry.stopAgent",
         "title": "%cmd.stopAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(debug-stop)"
       },
       {
-        "command": "agentGrid.restartAgent",
+        "command": "agentry.restartAgent",
         "title": "%cmd.restartAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(debug-restart)"
       },
       {
-        "command": "agentGrid.saveAgent",
+        "command": "agentry.saveAgent",
         "title": "%cmd.saveAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(save)"
       },
       {
-        "command": "agentGrid.removeAgent",
+        "command": "agentry.removeAgent",
         "title": "%cmd.removeAgent%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(trash)"
       },
       {
-        "command": "agentGrid.openConfig",
+        "command": "agentry.openConfig",
         "title": "%cmd.openConfig%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(json)"
       },
       {
-        "command": "agentGrid.focusAgent",
+        "command": "agentry.focusAgent",
         "title": "%cmd.focusAgent%",
-        "category": "Agent Grid"
+        "category": "Agentry"
       },
       {
-        "command": "agentGrid.showAgents",
+        "command": "agentry.showAgents",
         "title": "%cmd.showAgents%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(zap)"
       },
       {
-        "command": "agentGrid.refresh",
+        "command": "agentry.refresh",
         "title": "%cmd.refresh%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(refresh)"
       },
       {
-        "command": "agentGrid.applyLayout",
+        "command": "agentry.applyLayout",
         "title": "%cmd.applyLayout%",
-        "category": "Agent Grid"
+        "category": "Agentry"
       },
       {
-        "command": "agentGrid.toggleHiddenFiles",
+        "command": "agentry.toggleHiddenFiles",
         "title": "%cmd.toggleHiddenFiles%",
-        "category": "Agent Grid",
+        "category": "Agentry",
         "icon": "$(eye)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "agentGrid.startAgent",
+          "command": "agentry.startAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.stopAgent",
+          "command": "agentry.stopAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.restartAgent",
+          "command": "agentry.restartAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.saveAgent",
+          "command": "agentry.saveAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.removeAgent",
+          "command": "agentry.removeAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.focusAgent",
+          "command": "agentry.focusAgent",
           "when": "false"
         },
         {
-          "command": "agentGrid.applyLayout",
+          "command": "agentry.applyLayout",
           "when": "false"
         }
       ],
       "view/title": [
         {
-          "command": "agentGrid.initProject",
-          "when": "view == agentGrid.agents && !agentGrid.isProject && workbenchState != empty",
+          "command": "agentry.initProject",
+          "when": "view == agentry.agents && !agentry.isProject && workbenchState != empty",
           "group": "navigation@1"
         },
         {
-          "command": "agentGrid.newAgent",
-          "when": "view == agentGrid.agents && agentGrid.isProject",
+          "command": "agentry.newAgent",
+          "when": "view == agentry.agents && agentry.isProject",
           "group": "navigation@1"
         },
         {
-          "command": "agentGrid.refresh",
-          "when": "view == agentGrid.agents",
+          "command": "agentry.refresh",
+          "when": "view == agentry.agents",
           "group": "1_config@2"
         },
         {
-          "command": "agentGrid.openConfig",
-          "when": "view == agentGrid.agents && agentGrid.isProject",
+          "command": "agentry.openConfig",
+          "when": "view == agentry.agents && agentry.isProject",
           "group": "1_config@1"
         },
         {
-          "command": "agentGrid.toggleHiddenFiles",
-          "when": "view == agentGrid.files",
+          "command": "agentry.toggleHiddenFiles",
+          "when": "view == agentry.files",
           "group": "navigation@1"
         }
       ],
       "view/item/context": [
         {
-          "command": "agentGrid.newAgent",
-          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "command": "agentry.newAgent",
+          "when": "view == agentry.agents && viewItem == agentry.project",
           "group": "inline@1"
         },
         {
-          "command": "agentGrid.startAll",
-          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "command": "agentry.startAll",
+          "when": "view == agentry.agents && viewItem == agentry.project",
           "group": "inline@2"
         },
         {
-          "command": "agentGrid.openConfig",
-          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "command": "agentry.openConfig",
+          "when": "view == agentry.agents && viewItem == agentry.project",
           "group": "1_config@1"
         },
         {
-          "command": "agentGrid.startAgent",
-          "when": "view == agentGrid.agents && viewItem == agentGrid.agent.stopped",
+          "command": "agentry.startAgent",
+          "when": "view == agentry.agents && viewItem == agentry.agent.stopped",
           "group": "inline@1"
         },
         {
-          "command": "agentGrid.restartAgent",
-          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent\\.running/",
+          "command": "agentry.restartAgent",
+          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.running/",
           "group": "inline@1"
         },
         {
-          "command": "agentGrid.stopAgent",
-          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent\\.running/",
+          "command": "agentry.stopAgent",
+          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.running/",
           "group": "inline@2"
         },
         {
-          "command": "agentGrid.saveAgent",
-          "when": "view == agentGrid.agents && viewItem == agentGrid.agent.running.adhoc",
+          "command": "agentry.saveAgent",
+          "when": "view == agentry.agents && viewItem == agentry.agent.running.adhoc",
           "group": "inline@3"
         },
         {
-          "command": "agentGrid.removeAgent",
-          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent/",
+          "command": "agentry.removeAgent",
+          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent/",
           "group": "9_danger@1"
         }
       ]
     },
     "views": {
-      "agentGrid": [
+      "agentry": [
         {
-          "id": "agentGrid.agents",
+          "id": "agentry.agents",
           "name": "%view.agents%",
-          "contextualTitle": "Agent Grid",
+          "contextualTitle": "Agentry",
           "visibility": "visible",
           "initialSize": 2
         },
         {
-          "id": "agentGrid.files",
+          "id": "agentry.files",
           "name": "%view.files%",
-          "contextualTitle": "Agent Grid",
+          "contextualTitle": "Agentry",
           "visibility": "visible",
           "initialSize": 5
         },
         {
-          "id": "agentGrid.layout",
+          "id": "agentry.layout",
           "name": "%view.layout%",
-          "contextualTitle": "Agent Grid",
+          "contextualTitle": "Agentry",
           "visibility": "visible",
           "initialSize": 2
         }
@@ -247,31 +247,31 @@
     },
     "viewsWelcome": [
       {
-        "view": "agentGrid.agents",
+        "view": "agentry.agents",
         "when": "workbenchState == empty",
         "contents": "%welcome.noFolder%"
       },
       {
-        "view": "agentGrid.agents",
-        "when": "workbenchState != empty && !agentGrid.isProject",
+        "view": "agentry.agents",
+        "when": "workbenchState != empty && !agentry.isProject",
         "contents": "%welcome.notProject%"
       },
       {
-        "view": "agentGrid.agents",
-        "when": "workbenchState != empty && agentGrid.isProject",
+        "view": "agentry.agents",
+        "when": "workbenchState != empty && agentry.isProject",
         "contents": "%welcome.noAgents%"
       }
     ],
     "jsonValidation": [
       {
-        "fileMatch": ".vscode/agent-grid.json",
-        "url": "./schema/agent-grid.schema.json"
+        "fileMatch": ".vscode/agentry.json",
+        "url": "./schema/agentry.schema.json"
       }
     ],
     "configuration": {
-      "title": "Agent Grid",
+      "title": "Agentry",
       "properties": {
-        "agentGrid.defaultMode": {
+        "agentry.defaultMode": {
           "type": "string",
           "enum": [
             "new",
@@ -284,7 +284,7 @@
           "default": "new",
           "markdownDescription": "%config.defaultMode%"
         },
-        "agentGrid.launchStrategy": {
+        "agentry.launchStrategy": {
           "type": "string",
           "enum": [
             "shell",
@@ -297,17 +297,17 @@
           "default": "shell",
           "markdownDescription": "%config.launchStrategy%"
         },
-        "agentGrid.autoStart": {
+        "agentry.autoStart": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.autoStart%"
         },
-        "agentGrid.revealOnFocus": {
+        "agentry.revealOnFocus": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.revealOnFocus%"
         },
-        "agentGrid.profiles": {
+        "agentry.profiles": {
           "type": "object",
           "scope": "window",
           "markdownDescription": "%config.profiles%",
@@ -363,7 +363,7 @@
             }
           }
         },
-        "agentGrid.showHiddenFiles": {
+        "agentry.showHiddenFiles": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.showHiddenFiles%"
@@ -372,7 +372,7 @@
     },
     "walkthroughs": [
       {
-        "id": "agentGrid.getStarted",
+        "id": "agentry.getStarted",
         "title": "%walkthrough.title%",
         "description": "%walkthrough.description%",
         "steps": [
@@ -392,7 +392,7 @@
               "markdown": "media/walkthrough-agent.md"
             },
             "completionEvents": [
-              "onCommand:agentGrid.newAgent"
+              "onCommand:agentry.newAgent"
             ]
           },
           {
@@ -403,7 +403,7 @@
               "markdown": "media/walkthrough-layout.md"
             },
             "completionEvents": [
-              "onCommand:agentGrid.applyLayout"
+              "onCommand:agentry.applyLayout"
             ]
           }
         ]
@@ -412,9 +412,9 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agentGrid",
-          "title": "Agent Grid",
-          "icon": "media/agent-grid.svg"
+          "id": "agentry",
+          "title": "Agentry",
+          "icon": "media/agentry.svg"
         }
       ]
     }
@@ -436,5 +436,9 @@
     "eslint": "^9.37.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/suzup/agentry/issues"
+  },
+  "homepage": "https://github.com/suzup/agentry#readme"
 }

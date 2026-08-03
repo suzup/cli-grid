@@ -10,7 +10,7 @@ import { AgentRegistry } from './registry.js';
 import { StatusBar } from './statusbar.js';
 import { AgentsTreeProvider, type AgentNode, type Node, type ProjectNode } from './tree.js';
 
-const INTRO_SHOWN_KEY = 'agentGrid.introShown';
+const INTRO_SHOWN_KEY = 'agentry.introShown';
 
 export function activate(context: vscode.ExtensionContext): void {
   const projects = new ProjectWatcher();
@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(projects, git, registry, tree, files, layouts, statusBar);
 
-  const filesView = vscode.window.createTreeView('agentGrid.files', {
+  const filesView = vscode.window.createTreeView('agentry.files', {
     treeDataProvider: files,
     showCollapseAll: true,
   });
@@ -47,13 +47,13 @@ export function activate(context: vscode.ExtensionContext): void {
     filesView,
     files.onDidChangeScope(syncFilesHeader),
     git.onDidChange(syncFilesHeader),
-    vscode.window.createTreeView('agentGrid.layout', { treeDataProvider: layouts }),
-    vscode.window.createTreeView('agentGrid.agents', {
+    vscode.window.createTreeView('agentry.layout', { treeDataProvider: layouts }),
+    vscode.window.createTreeView('agentry.agents', {
       treeDataProvider: tree,
       showCollapseAll: true,
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration('agentGrid.profiles')) {
+      if (event.affectsConfiguration('agentry.profiles')) {
         clearAvailabilityCache();
         tree.refresh();
       }
@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const register = (id: string, handler: (...args: never[]) => unknown) =>
     context.subscriptions.push(vscode.commands.registerCommand(id, handler));
 
-  register('agentGrid.initProject', async () => {
+  register('agentry.initProject', async () => {
     const folders = vscode.workspace.workspaceFolders ?? [];
     const first = folders[0];
     if (!first) {
@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (candidates.length > 1) {
         const picked = await vscode.window.showQuickPick(
           candidates.map((f) => ({ label: `$(root-folder) ${f.name}`, description: f.uri.fsPath, uri: f.uri })),
-          { title: vscode.l10n.t('Which folder should become an Agent Grid project?') },
+          { title: vscode.l10n.t('Which folder should become an Agentry project?') },
         );
         if (!picked) return;
         root = picked.uri;
@@ -98,7 +98,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     if (await hasConfig(root)) {
       void vscode.window.showInformationMessage(
-        vscode.l10n.t('This folder is already an Agent Grid project.'),
+        vscode.l10n.t('This folder is already an Agentry project.'),
       );
       await projects.refresh();
       return;
@@ -108,55 +108,55 @@ export function activate(context: vscode.ExtensionContext): void {
       await writeConfig(root, { agents: [] });
     } catch (err) {
       void vscode.window.showErrorMessage(
-        vscode.l10n.t('Could not write {0}: {1}', '.vscode/agent-grid.json', String(err)),
+        vscode.l10n.t('Could not write {0}: {1}', '.vscode/agentry.json', String(err)),
       );
       return;
     }
     await projects.refresh();
-    await vscode.commands.executeCommand('agentGrid.showAgents');
+    await vscode.commands.executeCommand('agentry.showAgents');
   });
 
-  register('agentGrid.newAgent', (node?: Node) =>
+  register('agentry.newAgent', (node?: Node) =>
     launcher.newAgent(node && node.kind === 'project' ? node.uri : undefined),
   );
 
-  register('agentGrid.startAgent', async (node?: AgentNode) => {
+  register('agentry.startAgent', async (node?: AgentNode) => {
     if (!node) return;
     await launcher.start(node);
     files.setScope(node.folder);
   });
 
-  register('agentGrid.startAll', async (node?: ProjectNode) => {
+  register('agentry.startAll', async (node?: ProjectNode) => {
     const root = node?.uri ?? projects.projects()[0]?.uri;
     if (root) await launcher.startAll(root);
   });
 
-  register('agentGrid.removeAgent', (node?: AgentNode) => node && launcher.removeAgent(node));
+  register('agentry.removeAgent', (node?: AgentNode) => node && launcher.removeAgent(node));
 
-  register('agentGrid.saveAgent', (node?: AgentNode) => node && launcher.saveAgent(node));
+  register('agentry.saveAgent', (node?: AgentNode) => node && launcher.saveAgent(node));
 
-  register('agentGrid.stopAgent', (node?: AgentNode) => {
+  register('agentry.stopAgent', (node?: AgentNode) => {
     if (node?.running) registry.stop(node.running.id);
   });
 
-  register('agentGrid.restartAgent', async (node?: AgentNode) => {
+  register('agentry.restartAgent', async (node?: AgentNode) => {
     if (!node) return;
     if (node.running) registry.stop(node.running.id);
     await launcher.start(node);
   });
 
-  register('agentGrid.focusAgent', (node?: AgentNode) => {
+  register('agentry.focusAgent', (node?: AgentNode) => {
     const agent = node?.running ?? registry.list()[0];
     if (!agent) return;
 
     agent.terminal.show(true);
     // Point the Files view at what this CLI is actually working on.
-    if (vscode.workspace.getConfiguration('agentGrid').get<boolean>('revealOnFocus', true)) {
+    if (vscode.workspace.getConfiguration('agentry').get<boolean>('revealOnFocus', true)) {
       files.setScope(agent.folder);
     }
   });
 
-  register('agentGrid.applyLayout', async (id?: string) => {
+  register('agentry.applyLayout', async (id?: string) => {
     if (!id) return;
     const running = registry.list();
     const preset = resolveLayout(id, running.length);
@@ -178,25 +178,25 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  register('agentGrid.toggleHiddenFiles', async () => {
-    const config = vscode.workspace.getConfiguration('agentGrid');
+  register('agentry.toggleHiddenFiles', async () => {
+    const config = vscode.workspace.getConfiguration('agentry');
     const next = !config.get<boolean>('showHiddenFiles', false);
     await config.update('showHiddenFiles', next, vscode.ConfigurationTarget.Global);
     files.refresh();
   });
 
-  register('agentGrid.openConfig', async (node?: ProjectNode) => {
+  register('agentry.openConfig', async (node?: ProjectNode) => {
     const root = node?.uri ?? projects.projects()[0]?.uri;
     if (!root) return;
     const document = await vscode.workspace.openTextDocument(configUri(root));
     await vscode.window.showTextDocument(document);
   });
 
-  register('agentGrid.showAgents', () =>
-    vscode.commands.executeCommand('workbench.view.extension.agentGrid'),
+  register('agentry.showAgents', () =>
+    vscode.commands.executeCommand('workbench.view.extension.agentry'),
   );
 
-  register('agentGrid.refresh', async () => {
+  register('agentry.refresh', async () => {
     clearAvailabilityCache();
     await projects.refresh();
     tree.refresh();
@@ -225,7 +225,7 @@ async function start(
   const preset = resolveLayout(layout, project?.config.agents.length ?? 0);
   if (preset) await applyLayout(preset);
 
-  if (vscode.workspace.getConfiguration('agentGrid').get<boolean>('autoStart', false)) {
+  if (vscode.workspace.getConfiguration('agentry').get<boolean>('autoStart', false)) {
     for (const p of projects.projects()) await launcher.startAll(p.uri);
   }
 
@@ -245,23 +245,23 @@ async function showIntroOnce(
   if (context.globalState.get<boolean>(INTRO_SHOWN_KEY, false)) return;
   await context.globalState.update(INTRO_SHOWN_KEY, true);
 
-  const show = vscode.l10n.t('Open Agent Grid');
+  const show = vscode.l10n.t('Open Agentry');
   const tour = vscode.l10n.t('Get Started');
 
   const answer = await vscode.window.showInformationMessage(
     projects.any
-      ? vscode.l10n.t('This folder is an Agent Grid project. Open it from the Agent Grid icon in the Activity Bar.')
-      : vscode.l10n.t('Agent Grid is installed. Look for its icon in the Activity Bar on the left.'),
+      ? vscode.l10n.t('This folder is an Agentry project. Open it from the Agentry icon in the Activity Bar.')
+      : vscode.l10n.t('Agentry is installed. Look for its icon in the Activity Bar on the left.'),
     show,
     tour,
   );
 
   if (answer === show) {
-    await vscode.commands.executeCommand('agentGrid.showAgents');
+    await vscode.commands.executeCommand('agentry.showAgents');
   } else if (answer === tour) {
     await vscode.commands.executeCommand(
       'workbench.action.openWalkthrough',
-      `${context.extension.id}#agentGrid.getStarted`,
+      `${context.extension.id}#agentry.getStarted`,
     );
   }
 }

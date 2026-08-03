@@ -24,7 +24,7 @@ export class Launcher {
   /**
    * Folder -> CLI -> terminal, writing the choice into the project config.
    *
-   * The first agent added to a plain folder is what turns it into an Agent Grid
+   * The first agent added to a plain folder is what turns it into an Agentry
    * project; there is no separate setup step to discover.
    */
   async newAgent(preselectedRoot?: vscode.Uri): Promise<void> {
@@ -58,7 +58,7 @@ export class Launcher {
     if (first) {
       void vscode.window.showInformationMessage(
         vscode.l10n.t(
-          'This folder is now an Agent Grid project. Its setup lives in {0} — commit it to share, or add it to .gitignore to keep it local.',
+          'This folder is now an Agentry project. Its setup lives in {0} — commit it to share, or add it to .gitignore to keep it local.',
           CONFIG_RELATIVE,
         ),
       );
@@ -93,7 +93,7 @@ export class Launcher {
     const profile = findProfile(node.spec.cli);
     if (!profile) {
       void vscode.window.showWarningMessage(
-        vscode.l10n.t('No CLI profile named "{0}". Add one under agentGrid.profiles.', node.spec.cli),
+        vscode.l10n.t('No CLI profile named "{0}". Add one under agentry.profiles.', node.spec.cli),
       );
       return;
     }
@@ -178,7 +178,7 @@ export class Launcher {
         uri: f.uri,
       })),
       {
-        title: vscode.l10n.t('Agent Grid — which project?'),
+        title: vscode.l10n.t('Agentry — which project?'),
         placeHolder: vscode.l10n.t('This window has more than one folder open'),
         matchOnDescription: true,
       },
@@ -222,7 +222,7 @@ export class Launcher {
     items.push({ label: vscode.l10n.t('$(folder-opened) Browse...'), browse: true });
 
     const picked = await vscode.window.showQuickPick(items, {
-      title: vscode.l10n.t('Agent Grid — which folder should the CLI run in?'),
+      title: vscode.l10n.t('Agentry — which folder should the CLI run in?'),
       placeHolder: basename(root.path),
       matchOnDescription: true,
     });
@@ -286,7 +286,7 @@ export class Launcher {
 
     return await new Promise((resolve) => {
       const quickPick = vscode.window.createQuickPick<ProfileItem>();
-      quickPick.title = vscode.l10n.t('Agent Grid — which CLI? ({0})', basename(folder.path));
+      quickPick.title = vscode.l10n.t('Agentry — which CLI? ({0})', basename(folder.path));
       quickPick.placeholder = vscode.l10n.t(
         'Enter to use the default mode, or use the button for the other one',
       );

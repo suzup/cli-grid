@@ -91,7 +91,7 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vsc
     if (!dir) return [];
 
     const showHidden = vscode.workspace
-      .getConfiguration('agentGrid')
+      .getConfiguration('agentry')
       .get<boolean>('showHiddenFiles', false);
 
     let entries: [string, vscode.FileType][];
@@ -124,7 +124,7 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vsc
     // decorations apply. The Uri constructor sets it too; being explicit keeps
     // that from looking accidental.
     item.resourceUri = node.uri;
-    item.contextValue = node.isDir ? 'agentGrid.dir' : 'agentGrid.file';
+    item.contextValue = node.isDir ? 'agentry.dir' : 'agentry.file';
 
     if (!node.isDir) {
       item.command = {

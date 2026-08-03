@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 /**
  * Whether a CLI is started fresh or told to pick up its previous conversation.
- * Agent Grid never reads or writes conversation state — it only decides which
+ * Agentry never reads or writes conversation state — it only decides which
  * arguments to pass, and the CLI owns everything after that.
  */
 export type LaunchMode = 'new' | 'resume';

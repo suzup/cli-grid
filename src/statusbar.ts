@@ -15,12 +15,12 @@ export class StatusBar implements vscode.Disposable {
     private readonly registry: AgentRegistry,
   ) {
     this.item = vscode.window.createStatusBarItem(
-      'agentGrid.status',
+      'agentry.status',
       vscode.StatusBarAlignment.Left,
       90,
     );
-    this.item.name = 'Agent Grid';
-    this.item.command = 'agentGrid.showAgents';
+    this.item.name = 'Agentry';
+    this.item.command = 'agentry.showAgents';
 
     this.disposables.push(
       this.item,
@@ -37,16 +37,16 @@ export class StatusBar implements vscode.Disposable {
       .projects()
       .reduce((total, p) => total + p.config.agents.length, 0);
 
-    this.item.text = running > 0 ? `$(zap) ${running}` : '$(zap) Agent Grid';
+    this.item.text = running > 0 ? `$(zap) ${running}` : '$(zap) Agentry';
     this.item.tooltip = [
       running > 0
         ? vscode.l10n.t('{0} agent(s) running', running)
         : vscode.l10n.t('No agents running'),
       this.projects.any
         ? vscode.l10n.t('{0} configured in this folder', configured)
-        : vscode.l10n.t('This folder is not an Agent Grid project'),
+        : vscode.l10n.t('This folder is not an Agentry project'),
       '',
-      vscode.l10n.t('Click to open Agent Grid'),
+      vscode.l10n.t('Click to open Agentry'),
     ].join('\n');
     this.item.show();
   }

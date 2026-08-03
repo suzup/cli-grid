@@ -97,7 +97,7 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
     // they colour the Explorer.
     item.resourceUri = node.uri;
     item.iconPath = new vscode.ThemeIcon('root-folder');
-    item.contextValue = 'agentGrid.project';
+    item.contextValue = 'agentry.project';
     item.description = this.git.describe(node.uri);
     item.tooltip = new vscode.MarkdownString(`**${node.name}**\n\n${node.uri.fsPath}`);
     return item;
@@ -127,9 +127,9 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
 
     item.contextValue = node.running
       ? node.adHoc
-        ? 'agentGrid.agent.running.adhoc'
-        : 'agentGrid.agent.running'
-      : 'agentGrid.agent.stopped';
+        ? 'agentry.agent.running.adhoc'
+        : 'agentry.agent.running'
+      : 'agentry.agent.stopped';
 
     const git = this.git.describe(node.folder);
     item.tooltip = new vscode.MarkdownString(
@@ -147,7 +147,7 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
     );
 
     item.command = {
-      command: node.running ? 'agentGrid.focusAgent' : 'agentGrid.startAgent',
+      command: node.running ? 'agentry.focusAgent' : 'agentry.startAgent',
       title: node.running ? vscode.l10n.t('Focus Agent') : vscode.l10n.t('Start Agent'),
       arguments: [node],
     };

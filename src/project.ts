@@ -11,7 +11,7 @@ import type { LaunchMode } from './types.js';
  * to name, nothing stored elsewhere, and nothing to find again later.
  */
 export const CONFIG_DIR = '.vscode';
-export const CONFIG_FILE = 'agent-grid.json';
+export const CONFIG_FILE = 'agentry.json';
 export const CONFIG_RELATIVE = `${CONFIG_DIR}/${CONFIG_FILE}`;
 
 export interface AgentSpec {
@@ -139,7 +139,7 @@ export async function candidateFolders(root: vscode.Uri): Promise<vscode.Uri[]> 
 }
 
 /**
- * Tracks which open folders are Agent Grid projects.
+ * Tracks which open folders are Agentry projects.
  *
  * The config file can appear, change or vanish while the window is open — from
  * a git pull as easily as from our own writes — so this watches rather than
@@ -170,7 +170,7 @@ export class ProjectWatcher implements vscode.Disposable {
       const config = await readConfig(folder.uri);
       if (config) this.roots.set(folder.uri.toString(), config);
     }
-    void vscode.commands.executeCommand('setContext', 'agentGrid.isProject', this.roots.size > 0);
+    void vscode.commands.executeCommand('setContext', 'agentry.isProject', this.roots.size > 0);
     this.changeEmitter.fire();
   }
 

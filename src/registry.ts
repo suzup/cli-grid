@@ -52,7 +52,7 @@ export class AgentRegistry implements vscode.Disposable {
 
   launch(profile: AgentProfile, mode: LaunchMode, target: LaunchTarget): RunningAgent {
     const strategy = vscode.workspace
-      .getConfiguration('agentGrid')
+      .getConfiguration('agentry')
       .get<'shell' | 'exec'>('launchStrategy', 'shell');
 
     const folderName = basename(target.folder.path);

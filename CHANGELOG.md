@@ -6,14 +6,14 @@ First release.
 
 ### Added
 
-- **Agent Grid view container** in the Activity Bar, holding three views:
+- **Agentry view container** in the Activity Bar, holding three views:
   **Agents**, **Files** and **Layout**.
-- **Per-folder configuration** in `.vscode/agent-grid.json`. Opening a folder
+- **Per-folder configuration** in `.vscode/agentry.json`. Opening a folder
   restores its agents and split; a different set of agents is a different
   folder. Commit the file to share a setup, or gitignore it to keep it local.
 - **Built-in CLI profiles** for Claude Code, Codex and Gemini, with a
   new-vs-resume choice per launch, per profile or per agent. Arguments are
-  passed through untouched, and `agentGrid.profiles` adds or hides entries.
+  passed through untouched, and `agentry.profiles` adds or hides entries.
 - **Files view scoped to the focused agent** — selecting an agent, or clicking
   its terminal tab, switches the tree to the folder that CLI runs in. File icons
   and git colours come from the icon theme and the built-in Git extension.
