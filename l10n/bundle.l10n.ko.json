@@ -47,5 +47,7 @@
   "Auto": "자동",
   "follows the agent count — now {0}": "에이전트 수에 맞춰 자동 — 현재 {0}",
   "Recent": "최근",
-  "Run the agent here": "여기서 에이전트 실행"
+  "Run the agent here": "여기서 에이전트 실행",
+  "running · resumed": "실행 중 · 이어서",
+  "stopped · starts resumed": "중지됨 · 이어서 시작함"
 }

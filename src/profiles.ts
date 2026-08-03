@@ -97,6 +97,13 @@ export function defaultMode(profile: AgentProfile): LaunchMode {
   return profile.defaultMode ?? global;
 }
 
+/** The mode an agent will actually start in, once every default is applied. */
+export function effectiveMode(profileId: string, declared?: LaunchMode): LaunchMode {
+  if (declared) return declared;
+  const profile = findProfile(profileId);
+  return profile ? defaultMode(profile) : 'new';
+}
+
 /* ---------------------------- availability ---------------------------- */
 
 const availability = new Map<string, boolean>();

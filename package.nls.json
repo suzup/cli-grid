@@ -37,5 +37,8 @@
   "view.layout": "Layout",
   "cmd.applyLayout": "Apply Layout",
   "cmd.toggleHiddenFiles": "Show/Hide Hidden Files",
-  "config.showHiddenFiles": "Show dotfiles in the Files view. `.vscode` is always shown."
+  "config.showHiddenFiles": "Show dotfiles in the Files view. `.vscode` is always shown.",
+  "cmd.startAllResumed": "Start All, Resuming",
+  "cmd.startResumed": "Start, Resuming",
+  "cmd.startFresh": "Start Fresh"
 }

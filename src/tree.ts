@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { GitStatus } from './git.js';
 import { basename, resolveFolder } from './paths.js';
-import { findProfile } from './profiles.js';
+import { effectiveMode, findProfile } from './profiles.js';
 import type { AgentSpec, ProjectWatcher } from './project.js';
 import type { AgentRegistry } from './registry.js';
 import type { RunningAgent } from './types.js';
@@ -110,10 +110,15 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
     const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
     item.id = `${node.root.toString()}::${node.spec.folder}::${node.spec.cli}`;
 
+    const mode = effectiveMode(node.spec.cli, node.spec.mode);
     const where = node.spec.folder === '.' ? '' : node.spec.folder;
     const state = node.running
-      ? vscode.l10n.t('running')
-      : vscode.l10n.t('stopped');
+      ? node.running.mode === 'resume'
+        ? vscode.l10n.t('running · resumed')
+        : vscode.l10n.t('running')
+      : mode === 'resume'
+        ? vscode.l10n.t('stopped · starts resumed')
+        : vscode.l10n.t('stopped');
     item.description = [where, state, node.adHoc ? vscode.l10n.t('unsaved') : '']
       .filter(Boolean)
       .join('  ·  ');
@@ -125,11 +130,12 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
         )
       : new vscode.ThemeIcon('debug-start', new vscode.ThemeColor('disabledForeground'));
 
+    // The suffix decides which of the two start buttons this row shows.
     item.contextValue = node.running
       ? node.adHoc
         ? 'agentry.agent.running.adhoc'
         : 'agentry.agent.running'
-      : 'agentry.agent.stopped';
+      : `agentry.agent.stopped.${mode}`;
 
     const git = this.git.describe(node.folder);
     item.tooltip = new vscode.MarkdownString(

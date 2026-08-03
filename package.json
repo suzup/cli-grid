@@ -61,6 +61,24 @@
         "icon": "$(run-all)"
       },
       {
+        "command": "agentry.startAllResumed",
+        "title": "%cmd.startAllResumed%",
+        "category": "Agentry",
+        "icon": "$(history)"
+      },
+      {
+        "command": "agentry.startResumed",
+        "title": "%cmd.startResumed%",
+        "category": "Agentry",
+        "icon": "$(history)"
+      },
+      {
+        "command": "agentry.startFresh",
+        "title": "%cmd.startFresh%",
+        "category": "Agentry",
+        "icon": "$(add)"
+      },
+      {
         "command": "agentry.stopAgent",
         "title": "%cmd.stopAgent%",
         "category": "Agentry",
@@ -148,6 +166,18 @@
         {
           "command": "agentry.applyLayout",
           "when": "false"
+        },
+        {
+          "command": "agentry.startResumed",
+          "when": "false"
+        },
+        {
+          "command": "agentry.startFresh",
+          "when": "false"
+        },
+        {
+          "command": "agentry.startAllResumed",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -162,14 +192,24 @@
           "group": "navigation@1"
         },
         {
-          "command": "agentry.refresh",
-          "when": "view == agentry.agents",
-          "group": "1_config@2"
+          "command": "agentry.startAll",
+          "when": "view == agentry.agents && agentry.isProject",
+          "group": "navigation@2"
+        },
+        {
+          "command": "agentry.startAllResumed",
+          "when": "view == agentry.agents && agentry.isProject",
+          "group": "navigation@3"
         },
         {
           "command": "agentry.openConfig",
           "when": "view == agentry.agents && agentry.isProject",
           "group": "1_config@1"
+        },
+        {
+          "command": "agentry.refresh",
+          "when": "view == agentry.agents",
+          "group": "1_config@2"
         },
         {
           "command": "agentry.toggleHiddenFiles",
@@ -189,14 +229,29 @@
           "group": "inline@2"
         },
         {
+          "command": "agentry.startAllResumed",
+          "when": "view == agentry.agents && viewItem == agentry.project",
+          "group": "inline@3"
+        },
+        {
           "command": "agentry.openConfig",
           "when": "view == agentry.agents && viewItem == agentry.project",
           "group": "1_config@1"
         },
         {
           "command": "agentry.startAgent",
-          "when": "view == agentry.agents && viewItem == agentry.agent.stopped",
+          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.stopped/",
           "group": "inline@1"
+        },
+        {
+          "command": "agentry.startResumed",
+          "when": "view == agentry.agents && viewItem == agentry.agent.stopped.new",
+          "group": "inline@2"
+        },
+        {
+          "command": "agentry.startFresh",
+          "when": "view == agentry.agents && viewItem == agentry.agent.stopped.resume",
+          "group": "inline@2"
         },
         {
           "command": "agentry.restartAgent",

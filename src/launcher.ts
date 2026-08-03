@@ -91,8 +91,14 @@ export class Launcher {
     return columnFor(running, preset);
   }
 
-  /** Starts an agent that is already declared in the config. */
-  async start(node: AgentNode): Promise<void> {
+  /**
+   * Starts an agent that is already declared in the config.
+   *
+   * `modeOverride` is a one-off: reopening a folder and picking up the previous
+   * conversation is the common case, but it should not silently rewrite what the
+   * project file says the default is.
+   */
+  async start(node: AgentNode, modeOverride?: LaunchMode): Promise<void> {
     const profile = findProfile(node.spec.cli);
     if (!profile) {
       void vscode.window.showWarningMessage(
@@ -107,12 +113,16 @@ export class Launcher {
       return;
     }
 
-    const agent = this.registry.launch(profile, node.spec.mode ?? defaultMode(profile), {
-      root: node.root,
-      folderRef: node.spec.folder,
-      folder: node.folder,
-      viewColumn: await this.nextColumn(node.root),
-    });
+    const agent = this.registry.launch(
+      profile,
+      modeOverride ?? node.spec.mode ?? defaultMode(profile),
+      {
+        root: node.root,
+        folderRef: node.spec.folder,
+        folder: node.folder,
+        viewColumn: await this.nextColumn(node.root),
+      },
+    );
     agent.terminal.show(false);
   }
 
@@ -120,7 +130,7 @@ export class Launcher {
    * Starts every configured agent, laying the panes out first so each one opens
    * where it belongs instead of stacking as tabs in the active group.
    */
-  async startAll(root: vscode.Uri): Promise<void> {
+  async startAll(root: vscode.Uri, modeOverride?: LaunchMode): Promise<void> {
     const config = this.projects.configFor(root);
     const specs = config?.agents ?? [];
     if (!specs.length) return;
@@ -132,7 +142,7 @@ export class Launcher {
       if (this.registry.find(root, spec.folder, spec.cli)) continue;
       const profile = findProfile(spec.cli);
       if (!profile) continue;
-      this.registry.launch(profile, spec.mode ?? defaultMode(profile), {
+      this.registry.launch(profile, modeOverride ?? spec.mode ?? defaultMode(profile), {
         root,
         folderRef: spec.folder,
         folder: resolveFolder(root, spec.folder),
@@ -327,3 +337,4 @@ export class Launcher {
 function parentOf(uri: vscode.Uri): vscode.Uri {
   return dirnameOf(uri);
 }
+

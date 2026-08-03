@@ -131,6 +131,25 @@ export function activate(context: vscode.ExtensionContext): void {
     if (root) await launcher.startAll(root);
   });
 
+  // Reopening a folder is exactly when you want the previous conversations
+  // back, so bringing them all up that way is a single button.
+  register('agentry.startAllResumed', async (node?: ProjectNode) => {
+    const root = node?.uri ?? projects.projects()[0]?.uri;
+    if (root) await launcher.startAll(root, 'resume');
+  });
+
+  register('agentry.startResumed', async (node?: AgentNode) => {
+    if (!node) return;
+    await launcher.start(node, 'resume');
+    files.setScope(node.folder);
+  });
+
+  register('agentry.startFresh', async (node?: AgentNode) => {
+    if (!node) return;
+    await launcher.start(node, 'new');
+    files.setScope(node.folder);
+  });
+
   register('agentry.removeAgent', (node?: AgentNode) => node && launcher.removeAgent(node));
 
   register('agentry.saveAgent', (node?: AgentNode) => node && launcher.saveAgent(node));
