@@ -75,15 +75,32 @@ async function focusTerminal(terminal: vscode.Terminal): Promise<void> {
   await activated;
 }
 
+/**
+ * Moves the terminal into a given editor group, 1-based.
+ *
+ * The command is `moveActiveEditor` with no prefix — the `workbench.action.`
+ * ones move the whole group instead. `moveEditorToNthGroup` was removed in
+ * 1.25.1, so the fallback walks forward from the first group; that can invent a
+ * group when there is no next one, which is why it is only a fallback.
+ */
 async function moveToGroup(terminal: vscode.Terminal, group: number): Promise<void> {
   await focusTerminal(terminal);
-  // `moveEditorToNthGroup` was removed in 1.25.1; this takes the index directly
-  // and, unlike `moveEditorToNextGroup`, never invents a new group.
-  await vscode.commands.executeCommand('workbench.action.moveActiveEditor', {
-    to: 'position',
-    by: 'group',
-    value: group,
-  });
+
+  try {
+    await vscode.commands.executeCommand('moveActiveEditor', {
+      to: 'position',
+      by: 'group',
+      value: group,
+    });
+    return;
+  } catch {
+    // Fall through to the older commands.
+  }
+
+  await vscode.commands.executeCommand('workbench.action.moveEditorToFirstGroup');
+  for (let step = 1; step < group; step++) {
+    await vscode.commands.executeCommand('workbench.action.moveEditorToNextGroup');
+  }
 }
 
 /**
