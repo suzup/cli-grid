@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import { applyLayout, columnFor, resolveLayout } from './layout.js';
-import { basename, relativeTo, resolveFolder } from './paths.js';
+import { basename, dirnameOf, relativeTo, resolveFolder } from './paths.js';
 import { defaultMode, findProfile, isAvailable, readProfiles } from './profiles.js';
 import {
   CONFIG_RELATIVE,
   addAgentToConfig,
-  candidateFolders,
   hasConfig,
   removeAgentFromConfig,
   type AgentSpec,
@@ -195,84 +194,23 @@ export class Launcher {
   /**
    * Which folder the CLI runs in.
    *
-   * Always asks. A project's agents routinely live outside its root — a folder
-   * of unrelated repositories is a normal shape — so "Browse..." has to stay
-   * reachable. Folders already in use and recently browsed ones are listed so
-   * that browsing is rarely the answer twice.
+   * Straight to the folder dialog, opened at the parent of whatever was picked
+   * last. Agents almost always land in a sibling of the previous one, so a list
+   * of folders already in use is a step in the way rather than a shortcut.
    */
   private async pickTargetFolder(root: vscode.Uri): Promise<vscode.Uri | undefined> {
-    interface Item extends vscode.QuickPickItem {
-      uri?: vscode.Uri;
-      browse?: boolean;
-    }
-
-    const seen = new Set<string>([root.toString()]);
-    const items: Item[] = [
-      {
-        label: `$(root-folder) ${basename(root.path)}`,
-        description: vscode.l10n.t('the project folder itself'),
-        uri: root,
-      },
-    ];
-
-    const add = (uri: vscode.Uri, icon: string, description?: string) => {
-      if (seen.has(uri.toString())) return;
-      seen.add(uri.toString());
-      items.push({
-        label: `$(${icon}) ${basename(uri.path)}`,
-        ...(description ? { description } : {}),
-        detail: uri.fsPath,
-        uri,
-      });
-    };
-
-    // Folders this project already points at, including ones outside the root.
-    const configured = (this.projects.configFor(root)?.agents ?? [])
-      .map((spec) => resolveFolder(root, spec.folder))
-      .filter((uri) => !seen.has(uri.toString()));
-    if (configured.length) {
-      items.push({ label: vscode.l10n.t('In this project'), kind: vscode.QuickPickItemKind.Separator });
-      for (const uri of configured) {
-        add(uri, 'folder-active', this.runningLabel(root, relativeTo(root, uri)));
-      }
-    }
-
-    const children = await candidateFolders(root);
-    if (children.length) {
-      items.push({ label: vscode.l10n.t('Subfolders'), kind: vscode.QuickPickItemKind.Separator });
-      for (const child of children) add(child, 'folder');
-    }
-
-    const recent = this.recentFolders().filter((uri) => !seen.has(uri.toString()));
-    if (recent.length) {
-      items.push({ label: vscode.l10n.t('Recent'), kind: vscode.QuickPickItemKind.Separator });
-      for (const uri of recent) add(uri, 'history');
-    }
-
-    items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
-    items.push({
-      label: vscode.l10n.t('$(folder-opened) Browse...'),
-      description: vscode.l10n.t('any folder on this machine'),
-      browse: true,
-    });
-
-    const picked = await vscode.window.showQuickPick(items, {
-      title: vscode.l10n.t('Agentry — which folder should the CLI run in?'),
-      placeHolder: vscode.l10n.t('Enter for {0}, or pick another', basename(root.path)),
-      matchOnDescription: true,
-      matchOnDetail: true,
-    });
-    if (!picked) return undefined;
-    if (!picked.browse) return picked.uri;
+    const previous = this.recentFolders()[0];
+    const startAt = parentOf(previous ?? root);
 
     const chosen = await vscode.window.showOpenDialog({
       canSelectFolders: true,
       canSelectFiles: false,
       canSelectMany: false,
-      defaultUri: this.recentFolders()[0] ?? root,
-      openLabel: vscode.l10n.t('Select folder'),
-      title: vscode.l10n.t('Agentry — folder for this agent'),
+      defaultUri: startAt,
+      openLabel: vscode.l10n.t('Run the agent here'),
+      title: vscode.l10n.t('Agentry — which folder should the CLI run in?'),
     });
+
     const folder = chosen?.[0];
     if (folder) await this.remember(folder);
     return folder;
@@ -290,11 +228,6 @@ export class Launcher {
       .map((u) => u.toString())
       .filter((u) => u !== key);
     await this.context.globalState.update(RECENT_KEY, [key, ...rest].slice(0, RECENT_LIMIT));
-  }
-
-  private runningLabel(root: vscode.Uri, folderRef: string): string | undefined {
-    const count = this.registry.inProject(root).filter((a) => a.folderRef === folderRef).length;
-    return count ? vscode.l10n.t('{0} agent(s) running', count) : undefined;
   }
 
   /* ------------------------------- CLI step -------------------------------- */
@@ -388,4 +321,9 @@ export class Launcher {
       });
     });
   }
+}
+
+/** Where the folder dialog should open: one level above the last choice. */
+function parentOf(uri: vscode.Uri): vscode.Uri {
+  return dirnameOf(uri);
 }

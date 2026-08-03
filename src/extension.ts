@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { FilesTreeProvider } from './files.js';
 import { GitStatus } from './git.js';
 import { Launcher } from './launcher.js';
-import { AUTO_LAYOUT, applyLayout, arrange, resolveLayout } from './layout.js';
+import { AUTO_LAYOUT, applyLayout, arrangeInto, resolveLayout } from './layout.js';
 import { LayoutTreeProvider } from './layoutView.js';
 import { clearAvailabilityCache } from './profiles.js';
 import { ProjectWatcher, configUri, hasConfig, updateConfig, writeConfig } from './project.js';
@@ -162,9 +162,9 @@ export function activate(context: vscode.ExtensionContext): void {
     const preset = resolveLayout(id, running.length);
     if (!preset) return;
 
-    await applyLayout(preset);
-    // A grid with every terminal stacked in the first pane is not a grid.
-    await arrange(running.map((a) => a.terminal), preset);
+    // Applies the split and distributes the terminals into it; a grid with
+    // every terminal stacked in one pane is not a grid.
+    await arrangeInto(running.map((a) => a.terminal), preset);
     layouts.setCurrent(id);
 
     // The split belongs to the window, so it is recorded once, on the project

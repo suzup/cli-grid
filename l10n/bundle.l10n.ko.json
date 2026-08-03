@@ -4,9 +4,6 @@
   "Agentry — which project?": "Agentry — 어느 프로젝트에서?",
   "This window has more than one folder open": "이 창에 폴더가 여러 개 열려 있습니다",
   "Agentry — which folder should the CLI run in?": "Agentry — CLI를 어느 폴더에서 실행할까요?",
-  "the project folder itself": "프로젝트 폴더 자체",
-  "Subfolders": "하위 폴더",
-  "$(folder-opened) Browse...": "$(folder-opened) 폴더 찾아보기...",
   "Select folder": "폴더 선택",
   "{0} agent(s) running": "에이전트 {0}개 실행 중",
   "Agentry — which CLI? ({0})": "Agentry — 어떤 CLI? ({0})",
@@ -49,9 +46,6 @@
   "Eight panes": "8분할",
   "Auto": "자동",
   "follows the agent count — now {0}": "에이전트 수에 맞춰 자동 — 현재 {0}",
-  "In this project": "이 프로젝트",
   "Recent": "최근",
-  "any folder on this machine": "이 컴퓨터의 아무 폴더",
-  "Enter for {0}, or pick another": "Enter는 {0}, 또는 다른 폴더 선택",
-  "Agentry — folder for this agent": "Agentry — 이 에이전트가 실행될 폴더"
+  "Run the agent here": "여기서 에이전트 실행"
 }

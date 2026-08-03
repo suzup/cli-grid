@@ -50,37 +50,67 @@ export async function applyLayout(preset: LayoutPreset): Promise<void> {
 }
 
 /**
- * Spreads terminals across the panes, wrapping into tabs once there are more
- * agents than panes — six agents in a 2 x 2 leaves two panes holding two tabs.
+ * Makes a terminal the active editor and waits until the workbench agrees.
  *
- * VS Code removed the `moveEditorToNthGroup` commands in 1.25.1, so the target
- * group is reached by returning to the first group and stepping forward. That
- * walks the groups in order whatever the grid's geometry, which
- * `moveEditorToRightGroup` would not do across rows.
- *
- * Terminals are placed back to front so group one always still holds the first
- * terminal; an emptied group would collapse and take the layout with it.
+ * `show()` is fire-and-forget, so issuing a move command straight afterwards
+ * races it and moves whatever was previously active — which is how a 2 x 2 ends
+ * up as one column of stacked tabs.
  */
-export async function arrange(
+async function focusTerminal(terminal: vscode.Terminal): Promise<void> {
+  if (vscode.window.activeTerminal === terminal) return;
+
+  const activated = new Promise<void>((resolve) => {
+    const timer = setTimeout(finish, 500);
+    const sub = vscode.window.onDidChangeActiveTerminal((active) => {
+      if (active === terminal) finish();
+    });
+    function finish() {
+      clearTimeout(timer);
+      sub.dispose();
+      resolve();
+    }
+  });
+
+  terminal.show(false);
+  await activated;
+}
+
+async function moveToGroup(terminal: vscode.Terminal, group: number): Promise<void> {
+  await focusTerminal(terminal);
+  // `moveEditorToNthGroup` was removed in 1.25.1; this takes the index directly
+  // and, unlike `moveEditorToNextGroup`, never invents a new group.
+  await vscode.commands.executeCommand('workbench.action.moveActiveEditor', {
+    to: 'position',
+    by: 'group',
+    value: group,
+  });
+}
+
+/**
+ * Puts one agent in each pane, wrapping into tabs once there are more agents
+ * than panes — six agents in a 2 x 2 leaves two panes holding two tabs.
+ *
+ * Everything is gathered into the first group before the split is applied. A
+ * group that loses its last editor closes, which would renumber the groups
+ * underneath a half-finished arrangement.
+ */
+export async function arrangeInto(
   terminals: readonly vscode.Terminal[],
   preset: LayoutPreset,
 ): Promise<void> {
   const panes = paneCount(preset);
+
+  for (const terminal of terminals) await moveToGroup(terminal, 1);
+  await applyLayout(preset);
   if (panes < 2 || terminals.length < 2) return;
 
+  // Back to front, so the first group is never emptied mid-way.
   for (let index = terminals.length - 1; index >= 1; index--) {
     const terminal = terminals[index];
-    if (!terminal) continue;
-
-    const target = (index % panes) + 1;
-    terminal.show(false);
-    await vscode.commands.executeCommand('workbench.action.moveEditorToFirstGroup');
-    for (let step = 1; step < target; step++) {
-      await vscode.commands.executeCommand('workbench.action.moveEditorToNextGroup');
-    }
+    if (terminal) await moveToGroup(terminal, (index % panes) + 1);
   }
 
-  terminals[0]?.show(false);
+  await focusTerminal(terminals[0] as vscode.Terminal);
 }
 
 /** Pane a newly launched agent should open in, 1-based. */
