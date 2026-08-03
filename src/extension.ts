@@ -16,7 +16,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const projects = new ProjectWatcher();
   const git = new GitStatus();
   const registry = new AgentRegistry();
-  const launcher = new Launcher(projects, registry);
+  const launcher = new Launcher(projects, registry, context);
   const tree = new AgentsTreeProvider(projects, registry, git);
   const files = new FilesTreeProvider(registry, git);
   const layouts = new LayoutTreeProvider();

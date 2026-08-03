@@ -15,10 +15,14 @@ import type { AgentRegistry } from './registry.js';
 import type { AgentNode } from './tree.js';
 import { supportsMode, type AgentProfile, type LaunchMode } from './types.js';
 
+const RECENT_KEY = 'agentry.recentFolders';
+const RECENT_LIMIT = 10;
+
 export class Launcher {
   constructor(
     private readonly projects: ProjectWatcher,
     private readonly registry: AgentRegistry,
+    private readonly context: vscode.ExtensionContext,
   ) {}
 
   /**
@@ -188,43 +192,75 @@ export class Launcher {
 
   /* ------------------------------ folder step ------------------------------ */
 
+  /**
+   * Which folder the CLI runs in.
+   *
+   * Always asks. A project's agents routinely live outside its root — a folder
+   * of unrelated repositories is a normal shape — so "Browse..." has to stay
+   * reachable. Folders already in use and recently browsed ones are listed so
+   * that browsing is rarely the answer twice.
+   */
   private async pickTargetFolder(root: vscode.Uri): Promise<vscode.Uri | undefined> {
-    const children = await candidateFolders(root);
-
-    // With nothing to choose between, the project folder is the answer and a
-    // one-item picker would be pure friction.
-    if (children.length === 0) return root;
-
     interface Item extends vscode.QuickPickItem {
       uri?: vscode.Uri;
       browse?: boolean;
     }
 
+    const seen = new Set<string>([root.toString()]);
     const items: Item[] = [
       {
         label: `$(root-folder) ${basename(root.path)}`,
         description: vscode.l10n.t('the project folder itself'),
         uri: root,
       },
-      { label: vscode.l10n.t('Subfolders'), kind: vscode.QuickPickItemKind.Separator },
     ];
 
-    for (const child of children) {
-      const running = this.runningLabel(root, relativeTo(root, child));
+    const add = (uri: vscode.Uri, icon: string, description?: string) => {
+      if (seen.has(uri.toString())) return;
+      seen.add(uri.toString());
       items.push({
-        label: `$(folder) ${basename(child.path)}`,
-        ...(running ? { description: running } : {}),
-        uri: child,
+        label: `$(${icon}) ${basename(uri.path)}`,
+        ...(description ? { description } : {}),
+        detail: uri.fsPath,
+        uri,
       });
+    };
+
+    // Folders this project already points at, including ones outside the root.
+    const configured = (this.projects.configFor(root)?.agents ?? [])
+      .map((spec) => resolveFolder(root, spec.folder))
+      .filter((uri) => !seen.has(uri.toString()));
+    if (configured.length) {
+      items.push({ label: vscode.l10n.t('In this project'), kind: vscode.QuickPickItemKind.Separator });
+      for (const uri of configured) {
+        add(uri, 'folder-active', this.runningLabel(root, relativeTo(root, uri)));
+      }
+    }
+
+    const children = await candidateFolders(root);
+    if (children.length) {
+      items.push({ label: vscode.l10n.t('Subfolders'), kind: vscode.QuickPickItemKind.Separator });
+      for (const child of children) add(child, 'folder');
+    }
+
+    const recent = this.recentFolders().filter((uri) => !seen.has(uri.toString()));
+    if (recent.length) {
+      items.push({ label: vscode.l10n.t('Recent'), kind: vscode.QuickPickItemKind.Separator });
+      for (const uri of recent) add(uri, 'history');
     }
 
     items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
-    items.push({ label: vscode.l10n.t('$(folder-opened) Browse...'), browse: true });
+    items.push({
+      label: vscode.l10n.t('$(folder-opened) Browse...'),
+      description: vscode.l10n.t('any folder on this machine'),
+      browse: true,
+    });
 
     const picked = await vscode.window.showQuickPick(items, {
       title: vscode.l10n.t('Agentry — which folder should the CLI run in?'),
-      placeHolder: basename(root.path),
+      placeHolder: vscode.l10n.t('Enter for {0}, or pick another', basename(root.path)),
       matchOnDescription: true,
+      matchOnDetail: true,
     });
     if (!picked) return undefined;
     if (!picked.browse) return picked.uri;
@@ -233,10 +269,27 @@ export class Launcher {
       canSelectFolders: true,
       canSelectFiles: false,
       canSelectMany: false,
-      defaultUri: root,
+      defaultUri: this.recentFolders()[0] ?? root,
       openLabel: vscode.l10n.t('Select folder'),
+      title: vscode.l10n.t('Agentry — folder for this agent'),
     });
-    return chosen?.[0];
+    const folder = chosen?.[0];
+    if (folder) await this.remember(folder);
+    return folder;
+  }
+
+  private recentFolders(): vscode.Uri[] {
+    return this.context.globalState
+      .get<string[]>(RECENT_KEY, [])
+      .map((s) => vscode.Uri.parse(s));
+  }
+
+  private async remember(uri: vscode.Uri): Promise<void> {
+    const key = uri.toString();
+    const rest = this.recentFolders()
+      .map((u) => u.toString())
+      .filter((u) => u !== key);
+    await this.context.globalState.update(RECENT_KEY, [key, ...rest].slice(0, RECENT_LIMIT));
   }
 
   private runningLabel(root: vscode.Uri, folderRef: string): string | undefined {

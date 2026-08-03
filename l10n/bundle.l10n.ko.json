@@ -48,5 +48,10 @@
   "Six panes": "6분할",
   "Eight panes": "8분할",
   "Auto": "자동",
-  "follows the agent count — now {0}": "에이전트 수에 맞춰 자동 — 현재 {0}"
+  "follows the agent count — now {0}": "에이전트 수에 맞춰 자동 — 현재 {0}",
+  "In this project": "이 프로젝트",
+  "Recent": "최근",
+  "any folder on this machine": "이 컴퓨터의 아무 폴더",
+  "Enter for {0}, or pick another": "Enter는 {0}, 또는 다른 폴더 선택",
+  "Agentry — folder for this agent": "Agentry — 이 에이전트가 실행될 폴더"
 }
