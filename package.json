@@ -425,7 +425,8 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext ts",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "reinstall": "npm run build && vsce package --no-dependencies -o agentry.vsix && code --install-extension agentry.vsix --force"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
