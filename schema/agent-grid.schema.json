@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Grid project",
+  "description": "Declares which CLI agents belong to this folder. Lives at .vscode/agent-grid.json.",
+  "type": "object",
+  "properties": {
+    "layout": {
+      "type": "string",
+      "description": "Editor split restored when the folder is opened. \"auto\" picks the smallest split that fits the agents.",
+      "enum": [
+        "auto",
+        "single",
+        "grid-2x1",
+        "grid-1x2",
+        "grid-3x1",
+        "grid-2x2",
+        "grid-3x2",
+        "grid-4x2"
+      ]
+    },
+    "agents": {
+      "type": "array",
+      "description": "Agents belonging to this folder.",
+      "items": {
+        "type": "object",
+        "required": [
+          "cli"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "folder": {
+            "type": "string",
+            "default": ".",
+            "description": "Folder the CLI runs in, relative to this project. \".\" is the project root."
+          },
+          "cli": {
+            "type": "string",
+            "description": "Profile id, e.g. \"claude\", \"codex\", \"gemini\", or one you defined under agentGrid.profiles."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "new",
+              "resume"
+            ],
+            "description": "Overrides agentGrid.defaultMode for this agent."
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

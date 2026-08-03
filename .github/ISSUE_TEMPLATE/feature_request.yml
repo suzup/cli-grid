@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest something
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is awkward today
+      description: >
+        The situation you hit, rather than the solution you have in mind — it
+        often turns out there is a simpler fix.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you had in mind
+      description: Optional.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: >
+        Agent Grid deliberately stays out of the CLIs' way. It launches them and
+        keeps track of which folder each one is in; it does not manage
+        conversations, sessions or model settings.
+      options:
+        - label: This is about launching, arranging or navigating agents — not about what a CLI does once it is running.

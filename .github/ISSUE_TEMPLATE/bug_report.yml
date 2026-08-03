@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: .vscode/agent-grid.json
+      description: The project file, if the problem involves agents or layout.
+      render: json
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Agent Grid version, VS Code version, and OS.
+      placeholder: "0.1.0 · VS Code 1.95 · Windows 11 + WSL Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: remote
+    attributes:
+      label: Where is VS Code connected?
+      options:
+        - Local
+        - Remote - WSL
+        - Remote - SSH
+        - Dev container
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Extension host log
+      description: >
+        Help › Toggle Developer Tools › Console, or
+        Output › "Log (Extension Host)". Paste anything mentioning agentGrid.
+      render: shell

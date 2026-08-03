@@ -1,0 +1,440 @@
+{
+  "name": "agent-grid",
+  "displayName": "Agent Grid",
+  "description": "Run Claude Code, Codex and Gemini CLI side by side, configured per folder, with the file tree and git status always in view.",
+  "version": "0.1.0",
+  "publisher": "gbun",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "claude code",
+    "codex",
+    "gemini cli",
+    "terminal",
+    "agent",
+    "multi-agent"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gbun/agent-grid.git"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:.vscode/agent-grid.json"
+  ],
+  "main": "./dist/extension.js",
+  "l10n": "./l10n",
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentGrid.initProject",
+        "title": "%cmd.initProject%",
+        "category": "Agent Grid",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "agentGrid.newAgent",
+        "title": "%cmd.newAgent%",
+        "category": "Agent Grid",
+        "icon": "$(add)"
+      },
+      {
+        "command": "agentGrid.startAgent",
+        "title": "%cmd.startAgent%",
+        "category": "Agent Grid",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "agentGrid.startAll",
+        "title": "%cmd.startAll%",
+        "category": "Agent Grid",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "agentGrid.stopAgent",
+        "title": "%cmd.stopAgent%",
+        "category": "Agent Grid",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "agentGrid.restartAgent",
+        "title": "%cmd.restartAgent%",
+        "category": "Agent Grid",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "agentGrid.saveAgent",
+        "title": "%cmd.saveAgent%",
+        "category": "Agent Grid",
+        "icon": "$(save)"
+      },
+      {
+        "command": "agentGrid.removeAgent",
+        "title": "%cmd.removeAgent%",
+        "category": "Agent Grid",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "agentGrid.openConfig",
+        "title": "%cmd.openConfig%",
+        "category": "Agent Grid",
+        "icon": "$(json)"
+      },
+      {
+        "command": "agentGrid.focusAgent",
+        "title": "%cmd.focusAgent%",
+        "category": "Agent Grid"
+      },
+      {
+        "command": "agentGrid.showAgents",
+        "title": "%cmd.showAgents%",
+        "category": "Agent Grid",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "agentGrid.refresh",
+        "title": "%cmd.refresh%",
+        "category": "Agent Grid",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "agentGrid.applyLayout",
+        "title": "%cmd.applyLayout%",
+        "category": "Agent Grid"
+      },
+      {
+        "command": "agentGrid.toggleHiddenFiles",
+        "title": "%cmd.toggleHiddenFiles%",
+        "category": "Agent Grid",
+        "icon": "$(eye)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "agentGrid.startAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.stopAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.restartAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.saveAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.removeAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.focusAgent",
+          "when": "false"
+        },
+        {
+          "command": "agentGrid.applyLayout",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "agentGrid.initProject",
+          "when": "view == agentGrid.agents && !agentGrid.isProject && workbenchState != empty",
+          "group": "navigation@1"
+        },
+        {
+          "command": "agentGrid.newAgent",
+          "when": "view == agentGrid.agents && agentGrid.isProject",
+          "group": "navigation@1"
+        },
+        {
+          "command": "agentGrid.refresh",
+          "when": "view == agentGrid.agents",
+          "group": "1_config@2"
+        },
+        {
+          "command": "agentGrid.openConfig",
+          "when": "view == agentGrid.agents && agentGrid.isProject",
+          "group": "1_config@1"
+        },
+        {
+          "command": "agentGrid.toggleHiddenFiles",
+          "when": "view == agentGrid.files",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "agentGrid.newAgent",
+          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "group": "inline@1"
+        },
+        {
+          "command": "agentGrid.startAll",
+          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "group": "inline@2"
+        },
+        {
+          "command": "agentGrid.openConfig",
+          "when": "view == agentGrid.agents && viewItem == agentGrid.project",
+          "group": "1_config@1"
+        },
+        {
+          "command": "agentGrid.startAgent",
+          "when": "view == agentGrid.agents && viewItem == agentGrid.agent.stopped",
+          "group": "inline@1"
+        },
+        {
+          "command": "agentGrid.restartAgent",
+          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent\\.running/",
+          "group": "inline@1"
+        },
+        {
+          "command": "agentGrid.stopAgent",
+          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent\\.running/",
+          "group": "inline@2"
+        },
+        {
+          "command": "agentGrid.saveAgent",
+          "when": "view == agentGrid.agents && viewItem == agentGrid.agent.running.adhoc",
+          "group": "inline@3"
+        },
+        {
+          "command": "agentGrid.removeAgent",
+          "when": "view == agentGrid.agents && viewItem =~ /^agentGrid\\.agent/",
+          "group": "9_danger@1"
+        }
+      ]
+    },
+    "views": {
+      "agentGrid": [
+        {
+          "id": "agentGrid.agents",
+          "name": "%view.agents%",
+          "contextualTitle": "Agent Grid",
+          "visibility": "visible",
+          "initialSize": 2
+        },
+        {
+          "id": "agentGrid.files",
+          "name": "%view.files%",
+          "contextualTitle": "Agent Grid",
+          "visibility": "visible",
+          "initialSize": 5
+        },
+        {
+          "id": "agentGrid.layout",
+          "name": "%view.layout%",
+          "contextualTitle": "Agent Grid",
+          "visibility": "visible",
+          "initialSize": 2
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "agentGrid.agents",
+        "when": "workbenchState == empty",
+        "contents": "%welcome.noFolder%"
+      },
+      {
+        "view": "agentGrid.agents",
+        "when": "workbenchState != empty && !agentGrid.isProject",
+        "contents": "%welcome.notProject%"
+      },
+      {
+        "view": "agentGrid.agents",
+        "when": "workbenchState != empty && agentGrid.isProject",
+        "contents": "%welcome.noAgents%"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": ".vscode/agent-grid.json",
+        "url": "./schema/agent-grid.schema.json"
+      }
+    ],
+    "configuration": {
+      "title": "Agent Grid",
+      "properties": {
+        "agentGrid.defaultMode": {
+          "type": "string",
+          "enum": [
+            "new",
+            "resume"
+          ],
+          "enumDescriptions": [
+            "%config.defaultMode.new%",
+            "%config.defaultMode.resume%"
+          ],
+          "default": "new",
+          "markdownDescription": "%config.defaultMode%"
+        },
+        "agentGrid.launchStrategy": {
+          "type": "string",
+          "enum": [
+            "shell",
+            "exec"
+          ],
+          "enumDescriptions": [
+            "%config.launchStrategy.shell%",
+            "%config.launchStrategy.exec%"
+          ],
+          "default": "shell",
+          "markdownDescription": "%config.launchStrategy%"
+        },
+        "agentGrid.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.autoStart%"
+        },
+        "agentGrid.revealOnFocus": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.revealOnFocus%"
+        },
+        "agentGrid.profiles": {
+          "type": "object",
+          "scope": "window",
+          "markdownDescription": "%config.profiles%",
+          "default": {},
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "args": {
+                "type": "object",
+                "properties": {
+                  "new": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "resume": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "defaultMode": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "resume"
+                ]
+              },
+              "icon": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "hidden": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "agentGrid.showHiddenFiles": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "%config.showHiddenFiles%"
+        }
+      }
+    },
+    "walkthroughs": [
+      {
+        "id": "agentGrid.getStarted",
+        "title": "%walkthrough.title%",
+        "description": "%walkthrough.description%",
+        "steps": [
+          {
+            "id": "openFolder",
+            "title": "%walkthrough.step1.title%",
+            "description": "%walkthrough.step1.description%",
+            "media": {
+              "markdown": "media/walkthrough-folder.md"
+            }
+          },
+          {
+            "id": "launchAgent",
+            "title": "%walkthrough.step2.title%",
+            "description": "%walkthrough.step2.description%",
+            "media": {
+              "markdown": "media/walkthrough-agent.md"
+            },
+            "completionEvents": [
+              "onCommand:agentGrid.newAgent"
+            ]
+          },
+          {
+            "id": "arrange",
+            "title": "%walkthrough.step3.title%",
+            "description": "%walkthrough.step3.description%",
+            "media": {
+              "markdown": "media/walkthrough-layout.md"
+            },
+            "completionEvents": [
+              "onCommand:agentGrid.applyLayout"
+            ]
+          }
+        ]
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentGrid",
+          "title": "Agent Grid",
+          "icon": "media/agent-grid.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@types/node": "^22.18.9",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
+    "eslint": "^9.37.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
+}

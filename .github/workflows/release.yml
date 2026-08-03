@@ -1,0 +1,52 @@
+name: Release
+
+# Tag a version to publish it:  git tag v0.1.0 && git push --tags
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Package
+        run: npx vsce package --no-dependencies -o agent-grid.vsix
+
+      # Attach the .vsix so people can install without a marketplace account.
+      - name: Attach to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: agent-grid.vsix
+          generate_release_notes: true
+
+      # Both marketplaces are optional: the step is skipped when its token is
+      # not configured, so a fork can still cut releases.
+      - name: Publish to the VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --no-dependencies --packagePath agent-grid.vsix
+
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx ovsx publish agent-grid.vsix --pat "$OVSX_PAT"
