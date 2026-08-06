@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { applyLayout, columnFor, resolveLayout } from './layout.js';
+import type { EditorGrid } from './grid.js';
+import { columnFor, resolveLayout } from './layout.js';
 import { basename, dirnameOf, relativeTo, resolveFolder } from './paths.js';
 import { defaultMode, findProfile, isAvailable, readProfiles } from './profiles.js';
 import {
@@ -14,20 +15,21 @@ import type { AgentRegistry } from './registry.js';
 import type { AgentNode } from './tree.js';
 import { supportsMode, type AgentProfile, type LaunchMode } from './types.js';
 
-const RECENT_KEY = 'agentry.recentFolders';
+const RECENT_KEY = 'cliGrid.recentFolders';
 const RECENT_LIMIT = 10;
 
 export class Launcher {
   constructor(
     private readonly projects: ProjectWatcher,
     private readonly registry: AgentRegistry,
+    private readonly grid: EditorGrid,
     private readonly context: vscode.ExtensionContext,
   ) {}
 
   /**
    * Folder -> CLI -> terminal, writing the choice into the project config.
    *
-   * The first agent added to a plain folder is what turns it into an Agentry
+   * The first agent added to a plain folder is what turns it into a CLI Grid
    * project; there is no separate setup step to discover.
    */
   async newAgent(preselectedRoot?: vscode.Uri): Promise<void> {
@@ -61,17 +63,19 @@ export class Launcher {
     if (first) {
       void vscode.window.showInformationMessage(
         vscode.l10n.t(
-          'This folder is now an Agentry project. Its setup lives in {0} — commit it to share, or add it to .gitignore to keep it local.',
+          'This folder is now a CLI Grid project. Its setup lives in {0} — commit it to share, or add it to .gitignore to keep it local.',
           CONFIG_RELATIVE,
         ),
       );
     }
 
+    const column = await this.nextColumn(root);
+    await this.grid.unlockAll();
     const agent = this.registry.launch(choice.profile, choice.mode, {
       root,
       folderRef,
       folder,
-      viewColumn: await this.nextColumn(root),
+      viewColumn: column,
     });
     agent.terminal.show(false);
   }
@@ -87,7 +91,7 @@ export class Launcher {
     const configured = this.projects.configFor(root)?.layout;
     const preset = resolveLayout(configured, running + 1);
     if (!preset) return 1;
-    if (configured === 'auto') await applyLayout(preset);
+    if (configured === 'auto') await this.grid.applyPreset(preset);
     return columnFor(running, preset);
   }
 
@@ -102,7 +106,7 @@ export class Launcher {
     const profile = findProfile(node.spec.cli);
     if (!profile) {
       void vscode.window.showWarningMessage(
-        vscode.l10n.t('No CLI profile named "{0}". Add one under agentry.profiles.', node.spec.cli),
+        vscode.l10n.t('No CLI profile named "{0}". Add one under cliGrid.profiles.', node.spec.cli),
       );
       return;
     }
@@ -113,6 +117,8 @@ export class Launcher {
       return;
     }
 
+    const column = await this.nextColumn(node.root);
+    await this.grid.unlockAll();
     const agent = this.registry.launch(
       profile,
       modeOverride ?? node.spec.mode ?? defaultMode(profile),
@@ -120,7 +126,7 @@ export class Launcher {
         root: node.root,
         folderRef: node.spec.folder,
         folder: node.folder,
-        viewColumn: await this.nextColumn(node.root),
+        viewColumn: column,
       },
     );
     agent.terminal.show(false);
@@ -136,7 +142,8 @@ export class Launcher {
     if (!specs.length) return;
 
     const preset = resolveLayout(config?.layout, specs.length);
-    if (preset) await applyLayout(preset);
+    if (preset) await this.grid.applyPreset(preset);
+    await this.grid.unlockAll();
 
     for (const [index, spec] of specs.entries()) {
       if (this.registry.find(root, spec.folder, spec.cli)) continue;
@@ -191,7 +198,7 @@ export class Launcher {
         uri: f.uri,
       })),
       {
-        title: vscode.l10n.t('Agentry — which project?'),
+        title: vscode.l10n.t('CLI Grid — which project?'),
         placeHolder: vscode.l10n.t('This window has more than one folder open'),
         matchOnDescription: true,
       },
@@ -218,7 +225,7 @@ export class Launcher {
       canSelectMany: false,
       defaultUri: startAt,
       openLabel: vscode.l10n.t('Run the agent here'),
-      title: vscode.l10n.t('Agentry — which folder should the CLI run in?'),
+      title: vscode.l10n.t('CLI Grid — which folder should the CLI run in?'),
     });
 
     const folder = chosen?.[0];
@@ -282,7 +289,7 @@ export class Launcher {
 
     return await new Promise((resolve) => {
       const quickPick = vscode.window.createQuickPick<ProfileItem>();
-      quickPick.title = vscode.l10n.t('Agentry — which CLI? ({0})', basename(folder.path));
+      quickPick.title = vscode.l10n.t('CLI Grid — which CLI? ({0})', basename(folder.path));
       quickPick.placeholder = vscode.l10n.t(
         'Enter to use the default mode, or use the button for the other one',
       );

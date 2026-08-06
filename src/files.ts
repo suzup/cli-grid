@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { GitStatus } from './git.js';
-import { basename, join } from './paths.js';
+import { basename, dirnameOf, exists, join } from './paths.js';
 import type { AgentRegistry } from './registry.js';
 
 /** Never worth expanding by default, and slow when they are huge. */
@@ -23,7 +23,15 @@ export class FileNode {
  * theme and the colouring comes from the built-in git decorations — the same
  * ones the Explorer uses.
  */
-export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vscode.Disposable {
+export class FilesTreeProvider
+  implements vscode.TreeDataProvider<FileNode>, vscode.TreeDragAndDropController<FileNode>, vscode.Disposable
+{
+  /** Dragging out to an editor group, a terminal or another window. */
+  readonly dragMimeTypes = ['text/uri-list'];
+
+  /** `files` is what a drop from outside the window arrives as. */
+  readonly dropMimeTypes = ['text/uri-list', 'files'];
+
   private readonly changeEmitter = new vscode.EventEmitter<FileNode | undefined>();
   readonly onDidChangeTreeData = this.changeEmitter.event;
 
@@ -91,7 +99,7 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vsc
     if (!dir) return [];
 
     const showHidden = vscode.workspace
-      .getConfiguration('agentry')
+      .getConfiguration('cliGrid')
       .get<boolean>('showHiddenFiles', false);
 
     let entries: [string, vscode.FileType][];
@@ -124,17 +132,86 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vsc
     // decorations apply. The Uri constructor sets it too; being explicit keeps
     // that from looking accidental.
     item.resourceUri = node.uri;
-    item.contextValue = node.isDir ? 'agentry.dir' : 'agentry.file';
+    item.contextValue = node.isDir ? 'cliGrid.dir' : 'cliGrid.file';
 
     if (!node.isDir) {
+      // Not `vscode.open`: that lands in whichever pane was last active, which
+      // is normally an agent. This one goes beside the grid.
       item.command = {
-        command: 'vscode.open',
+        command: 'cliGrid.openFile',
         title: vscode.l10n.t('Open File'),
         arguments: [node.uri],
       };
     }
 
     return item;
+  }
+
+  /**
+   * The workbench moves a `text/uri-list` anywhere a file can go: another
+   * editor group, a terminal — which pastes the path — or another window.
+   */
+  handleDrag(source: readonly FileNode[], transfer: vscode.DataTransfer): void {
+    transfer.set(
+      'text/uri-list',
+      new vscode.DataTransferItem(source.map((node) => node.uri.toString()).join('\r\n')),
+    );
+  }
+
+  /**
+   * Dropping onto the tree copies into the folder you dropped on — a file drops
+   * into its parent folder, and dropping past the last row means the folder the
+   * tree is showing.
+   *
+   * Always a copy, never a move: the source can be another repository, another
+   * window or the desktop, and a move across those is not something to do to
+   * someone by accident. A name that is taken gets " copy" added rather than
+   * asking, so a drop never overwrites work either.
+   */
+  async handleDrop(
+    target: FileNode | undefined,
+    transfer: vscode.DataTransfer,
+    token: vscode.CancellationToken,
+  ): Promise<void> {
+    const into = target ? (target.isDir ? target.uri : dirnameOf(target.uri)) : this.scope;
+    if (!into) return;
+
+    const failures: string[] = [];
+    let copied = 0;
+
+    for (const source of await droppedUris(transfer)) {
+      if (token.isCancellationRequested) break;
+      if (contains(source, into)) {
+        // Copying a folder into itself never terminates.
+        failures.push(vscode.l10n.t('{0} contains the folder you dropped it on', basename(source.path)));
+        continue;
+      }
+      try {
+        await vscode.workspace.fs.copy(source, await freeName(into, basename(source.path)), {
+          overwrite: false,
+        });
+        copied++;
+      } catch (err) {
+        failures.push(`${basename(source.path)}: ${String(err)}`);
+      }
+    }
+
+    for (const file of await droppedFiles(transfer)) {
+      if (token.isCancellationRequested) break;
+      try {
+        await vscode.workspace.fs.writeFile(await freeName(into, file.name), await file.data());
+        copied++;
+      } catch (err) {
+        failures.push(`${file.name}: ${String(err)}`);
+      }
+    }
+
+    if (copied) this.refresh();
+    if (failures.length) {
+      void vscode.window.showErrorMessage(
+        vscode.l10n.t('Could not copy {0}', failures.join(', ')),
+      );
+    }
   }
 
   /** Short label for the view header, e.g. "api — main ↑2". */
@@ -150,4 +227,70 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FileNode>, vsc
     this.scopeEmitter.dispose();
     for (const d of this.disposables) d.dispose();
   }
+}
+
+/** Resources in the drop that the file system can read directly. */
+async function droppedUris(transfer: vscode.DataTransfer): Promise<vscode.Uri[]> {
+  const list = await transfer.get('text/uri-list')?.asString();
+  if (!list) return [];
+
+  return list
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    // A uri-list may carry comment lines, and empty ones at the end.
+    .filter((line) => line && !line.startsWith('#'))
+    .flatMap((line) => {
+      try {
+        return [vscode.Uri.parse(line, true)];
+      } catch {
+        return [];
+      }
+    });
+}
+
+/**
+ * Files dropped from outside the window, which arrive as bytes.
+ *
+ * The workbench usually lists them under `text/uri-list` as well; those are
+ * skipped here so a drop is not copied twice.
+ */
+async function droppedFiles(transfer: vscode.DataTransfer): Promise<vscode.DataTransferFile[]> {
+  const known = new Set((await droppedUris(transfer)).map((uri) => uri.toString()));
+  const files: vscode.DataTransferFile[] = [];
+
+  transfer.forEach((item) => {
+    const file = item.asFile();
+    if (file && !(file.uri && known.has(file.uri.toString()))) files.push(file);
+  });
+
+  return files;
+}
+
+/** True when `inner` is `outer` itself or sits inside it. */
+export function contains(outer: vscode.Uri, inner: vscode.Uri): boolean {
+  const parent = outer.toString().replace(/\/+$/, '');
+  const child = inner.toString().replace(/\/+$/, '');
+  return child === parent || child.startsWith(`${parent}/`);
+}
+
+/**
+ * `name` in `dir`, or the first "name copy" style variant that is free.
+ *
+ * `fs.copy` with `overwrite: false` would throw instead, and a drop is too easy
+ * to do by accident for the answer to be an error dialog.
+ */
+export async function freeName(dir: vscode.Uri, name: string): Promise<vscode.Uri> {
+  if (!(await exists(join(dir, name)))) return join(dir, name);
+
+  const dot = name.lastIndexOf('.');
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const extension = dot > 0 ? name.slice(dot) : '';
+
+  for (let n = 1; n < 100; n++) {
+    const suffix = n === 1 ? ' copy' : ` copy ${n}`;
+    const candidate = join(dir, `${stem}${suffix}${extension}`);
+    if (!(await exists(candidate))) return candidate;
+  }
+
+  return join(dir, `${stem} copy ${Date.now()}${extension}`);
 }

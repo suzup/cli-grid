@@ -1,7 +1,7 @@
 {
-  "name": "agentry",
-  "displayName": "Agentry",
-  "description": "Run Claude Code, Codex and Gemini CLI side by side, configured per folder, with your files and git beside them.",
+  "name": "cli-grid",
+  "displayName": "CLI Grid — multi-agent Claude Code, Codex, Gemini",
+  "description": "Run several agent CLIs side by side in VS Code, configured per folder. No tmux, no extra window, with each agent's files and git beside it.",
   "version": "0.1.0",
   "publisher": "suzup",
   "license": "MIT",
@@ -16,20 +16,26 @@
     "claude code",
     "codex",
     "gemini cli",
-    "terminal",
+    "multi agent",
+    "multi-agent",
     "agent",
-    "multi-agent"
+    "terminal",
+    "split terminal",
+    "cli",
+    "tmux alternative"
   ],
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/suzup/agentry.git"
+    "url": "https://github.com/suzup/cli-grid.git"
   },
   "extensionKind": [
     "workspace"
   ],
   "activationEvents": [
     "onStartupFinished",
+    "workspaceContains:.vscode/cli-grid.json",
+    "workspaceContains:.vscode/agent-grid.json",
     "workspaceContains:.vscode/agentry.json"
   ],
   "main": "./dist/extension.js",
@@ -37,264 +43,453 @@
   "contributes": {
     "commands": [
       {
-        "command": "agentry.initProject",
+        "command": "cliGrid.initProject",
         "title": "%cmd.initProject%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(new-folder)"
       },
       {
-        "command": "agentry.newAgent",
+        "command": "cliGrid.newAgent",
         "title": "%cmd.newAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(add)"
       },
       {
-        "command": "agentry.startAgent",
+        "command": "cliGrid.startAgent",
         "title": "%cmd.startAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(debug-start)"
       },
       {
-        "command": "agentry.startAll",
+        "command": "cliGrid.startAll",
         "title": "%cmd.startAll%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(run-all)"
       },
       {
-        "command": "agentry.startAllResumed",
+        "command": "cliGrid.startAllResumed",
         "title": "%cmd.startAllResumed%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(history)"
       },
       {
-        "command": "agentry.startResumed",
+        "command": "cliGrid.startResumed",
         "title": "%cmd.startResumed%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(history)"
       },
       {
-        "command": "agentry.startFresh",
+        "command": "cliGrid.startFresh",
         "title": "%cmd.startFresh%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(add)"
       },
       {
-        "command": "agentry.stopAgent",
+        "command": "cliGrid.stopAgent",
         "title": "%cmd.stopAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(debug-stop)"
       },
       {
-        "command": "agentry.restartAgent",
+        "command": "cliGrid.restartAgent",
         "title": "%cmd.restartAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(debug-restart)"
       },
       {
-        "command": "agentry.saveAgent",
+        "command": "cliGrid.saveAgent",
         "title": "%cmd.saveAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(save)"
       },
       {
-        "command": "agentry.removeAgent",
+        "command": "cliGrid.removeAgent",
         "title": "%cmd.removeAgent%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(trash)"
       },
       {
-        "command": "agentry.openConfig",
+        "command": "cliGrid.openConfig",
         "title": "%cmd.openConfig%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(json)"
       },
       {
-        "command": "agentry.focusAgent",
+        "command": "cliGrid.focusAgent",
         "title": "%cmd.focusAgent%",
-        "category": "Agentry"
+        "category": "CLI Grid"
       },
       {
-        "command": "agentry.showAgents",
+        "command": "cliGrid.showAgents",
         "title": "%cmd.showAgents%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(zap)"
       },
       {
-        "command": "agentry.refresh",
+        "command": "cliGrid.refresh",
         "title": "%cmd.refresh%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(refresh)"
       },
       {
-        "command": "agentry.applyLayout",
+        "command": "cliGrid.applyLayout",
         "title": "%cmd.applyLayout%",
-        "category": "Agentry"
+        "category": "CLI Grid"
       },
       {
-        "command": "agentry.toggleHiddenFiles",
+        "command": "cliGrid.toggleHiddenFiles",
         "title": "%cmd.toggleHiddenFiles%",
-        "category": "Agentry",
+        "category": "CLI Grid",
         "icon": "$(eye)"
+      },
+      {
+        "command": "cliGrid.openFile",
+        "title": "%cmd.openFile%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.newFile",
+        "title": "%cmd.newFile%",
+        "category": "CLI Grid",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "cliGrid.newFolder",
+        "title": "%cmd.newFolder%",
+        "category": "CLI Grid",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "cliGrid.rename",
+        "title": "%cmd.rename%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.delete",
+        "title": "%cmd.delete%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.copy",
+        "title": "%cmd.copy%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.cut",
+        "title": "%cmd.cut%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.paste",
+        "title": "%cmd.paste%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.copyPath",
+        "title": "%cmd.copyPath%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.copyRelativePath",
+        "title": "%cmd.copyRelativePath%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.revealInOS",
+        "title": "%cmd.revealInOS%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.revealInExplorer",
+        "title": "%cmd.revealInExplorer%",
+        "category": "CLI Grid"
+      },
+      {
+        "command": "cliGrid.openInTerminal",
+        "title": "%cmd.openInTerminal%",
+        "category": "CLI Grid"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "agentry.startAgent",
+          "command": "cliGrid.startAgent",
           "when": "false"
         },
         {
-          "command": "agentry.stopAgent",
+          "command": "cliGrid.stopAgent",
           "when": "false"
         },
         {
-          "command": "agentry.restartAgent",
+          "command": "cliGrid.restartAgent",
           "when": "false"
         },
         {
-          "command": "agentry.saveAgent",
+          "command": "cliGrid.saveAgent",
           "when": "false"
         },
         {
-          "command": "agentry.removeAgent",
+          "command": "cliGrid.removeAgent",
           "when": "false"
         },
         {
-          "command": "agentry.focusAgent",
+          "command": "cliGrid.focusAgent",
           "when": "false"
         },
         {
-          "command": "agentry.applyLayout",
+          "command": "cliGrid.applyLayout",
           "when": "false"
         },
         {
-          "command": "agentry.startResumed",
+          "command": "cliGrid.startResumed",
           "when": "false"
         },
         {
-          "command": "agentry.startFresh",
+          "command": "cliGrid.startFresh",
           "when": "false"
         },
         {
-          "command": "agentry.startAllResumed",
+          "command": "cliGrid.startAllResumed",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.openFile",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.newFile",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.newFolder",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.rename",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.delete",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.copy",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.cut",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.paste",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.copyPath",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.copyRelativePath",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.revealInOS",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.revealInExplorer",
+          "when": "false"
+        },
+        {
+          "command": "cliGrid.openInTerminal",
           "when": "false"
         }
       ],
       "view/title": [
         {
-          "command": "agentry.initProject",
-          "when": "view == agentry.agents && !agentry.isProject && workbenchState != empty",
+          "command": "cliGrid.initProject",
+          "when": "view == cliGrid.agents && !cliGrid.isProject && workbenchState != empty",
           "group": "navigation@1"
         },
         {
-          "command": "agentry.newAgent",
-          "when": "view == agentry.agents && agentry.isProject",
+          "command": "cliGrid.newAgent",
+          "when": "view == cliGrid.agents && cliGrid.isProject",
           "group": "navigation@1"
         },
         {
-          "command": "agentry.startAll",
-          "when": "view == agentry.agents && agentry.isProject",
+          "command": "cliGrid.startAll",
+          "when": "view == cliGrid.agents && cliGrid.isProject",
           "group": "navigation@2"
         },
         {
-          "command": "agentry.startAllResumed",
-          "when": "view == agentry.agents && agentry.isProject",
+          "command": "cliGrid.startAllResumed",
+          "when": "view == cliGrid.agents && cliGrid.isProject",
           "group": "navigation@3"
         },
         {
-          "command": "agentry.openConfig",
-          "when": "view == agentry.agents && agentry.isProject",
+          "command": "cliGrid.openConfig",
+          "when": "view == cliGrid.agents && cliGrid.isProject",
           "group": "1_config@1"
         },
         {
-          "command": "agentry.refresh",
-          "when": "view == agentry.agents",
+          "command": "cliGrid.refresh",
+          "when": "view == cliGrid.agents",
           "group": "1_config@2"
         },
         {
-          "command": "agentry.toggleHiddenFiles",
-          "when": "view == agentry.files",
+          "command": "cliGrid.toggleHiddenFiles",
+          "when": "view == cliGrid.files",
           "group": "navigation@1"
+        },
+        {
+          "command": "cliGrid.newFile",
+          "when": "view == cliGrid.files",
+          "group": "navigation@2"
+        },
+        {
+          "command": "cliGrid.newFolder",
+          "when": "view == cliGrid.files",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
         {
-          "command": "agentry.newAgent",
-          "when": "view == agentry.agents && viewItem == agentry.project",
+          "command": "cliGrid.newAgent",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@1"
         },
         {
-          "command": "agentry.startAll",
-          "when": "view == agentry.agents && viewItem == agentry.project",
+          "command": "cliGrid.startAll",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@2"
         },
         {
-          "command": "agentry.startAllResumed",
-          "when": "view == agentry.agents && viewItem == agentry.project",
+          "command": "cliGrid.startAllResumed",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@3"
         },
         {
-          "command": "agentry.openConfig",
-          "when": "view == agentry.agents && viewItem == agentry.project",
+          "command": "cliGrid.openConfig",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "1_config@1"
         },
         {
-          "command": "agentry.startAgent",
-          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.stopped/",
+          "command": "cliGrid.startAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\.stopped/",
           "group": "inline@1"
         },
         {
-          "command": "agentry.startResumed",
-          "when": "view == agentry.agents && viewItem == agentry.agent.stopped.new",
+          "command": "cliGrid.startResumed",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.agent.stopped.new",
           "group": "inline@2"
         },
         {
-          "command": "agentry.startFresh",
-          "when": "view == agentry.agents && viewItem == agentry.agent.stopped.resume",
+          "command": "cliGrid.startFresh",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.agent.stopped.resume",
           "group": "inline@2"
         },
         {
-          "command": "agentry.restartAgent",
-          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.running/",
+          "command": "cliGrid.restartAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\.running/",
           "group": "inline@1"
         },
         {
-          "command": "agentry.stopAgent",
-          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent\\.running/",
+          "command": "cliGrid.stopAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\.running/",
           "group": "inline@2"
         },
         {
-          "command": "agentry.saveAgent",
-          "when": "view == agentry.agents && viewItem == agentry.agent.running.adhoc",
+          "command": "cliGrid.saveAgent",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.agent.running.adhoc",
           "group": "inline@3"
         },
         {
-          "command": "agentry.removeAgent",
-          "when": "view == agentry.agents && viewItem =~ /^agentry\\.agent/",
+          "command": "cliGrid.removeAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent/",
           "group": "9_danger@1"
+        },
+        {
+          "command": "cliGrid.newFile",
+          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "group": "1_new@1"
+        },
+        {
+          "command": "cliGrid.newFolder",
+          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "group": "1_new@2"
+        },
+        {
+          "command": "cliGrid.revealInOS",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "2_workspace@1"
+        },
+        {
+          "command": "cliGrid.revealInExplorer",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "2_workspace@2"
+        },
+        {
+          "command": "cliGrid.openInTerminal",
+          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "group": "2_workspace@3"
+        },
+        {
+          "command": "cliGrid.cut",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "5_cutcopypaste@1"
+        },
+        {
+          "command": "cliGrid.copy",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "5_cutcopypaste@2"
+        },
+        {
+          "command": "cliGrid.paste",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "5_cutcopypaste@3"
+        },
+        {
+          "command": "cliGrid.copyPath",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "6_copypath@1"
+        },
+        {
+          "command": "cliGrid.copyRelativePath",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "6_copypath@2"
+        },
+        {
+          "command": "cliGrid.rename",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "cliGrid.delete",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "group": "7_modification@2"
         }
       ]
     },
     "views": {
-      "agentry": [
+      "cliGrid": [
         {
-          "id": "agentry.agents",
+          "id": "cliGrid.agents",
           "name": "%view.agents%",
-          "contextualTitle": "Agentry",
+          "contextualTitle": "CLI Grid",
           "visibility": "visible",
           "initialSize": 2
         },
         {
-          "id": "agentry.files",
+          "id": "cliGrid.files",
           "name": "%view.files%",
-          "contextualTitle": "Agentry",
+          "contextualTitle": "CLI Grid",
           "visibility": "visible",
           "initialSize": 5
         },
         {
-          "id": "agentry.layout",
+          "id": "cliGrid.layout",
           "name": "%view.layout%",
-          "contextualTitle": "Agentry",
+          "contextualTitle": "CLI Grid",
           "visibility": "visible",
           "initialSize": 2
         }
@@ -302,31 +497,31 @@
     },
     "viewsWelcome": [
       {
-        "view": "agentry.agents",
+        "view": "cliGrid.agents",
         "when": "workbenchState == empty",
         "contents": "%welcome.noFolder%"
       },
       {
-        "view": "agentry.agents",
-        "when": "workbenchState != empty && !agentry.isProject",
+        "view": "cliGrid.agents",
+        "when": "workbenchState != empty && !cliGrid.isProject",
         "contents": "%welcome.notProject%"
       },
       {
-        "view": "agentry.agents",
-        "when": "workbenchState != empty && agentry.isProject",
+        "view": "cliGrid.agents",
+        "when": "workbenchState != empty && cliGrid.isProject",
         "contents": "%welcome.noAgents%"
       }
     ],
     "jsonValidation": [
       {
-        "fileMatch": ".vscode/agentry.json",
-        "url": "./schema/agentry.schema.json"
+        "fileMatch": ".vscode/cli-grid.json",
+        "url": "./schema/cli-grid.schema.json"
       }
     ],
     "configuration": {
-      "title": "Agentry",
+      "title": "CLI Grid",
       "properties": {
-        "agentry.defaultMode": {
+        "cliGrid.defaultMode": {
           "type": "string",
           "enum": [
             "new",
@@ -339,7 +534,7 @@
           "default": "new",
           "markdownDescription": "%config.defaultMode%"
         },
-        "agentry.launchStrategy": {
+        "cliGrid.launchStrategy": {
           "type": "string",
           "enum": [
             "shell",
@@ -352,17 +547,17 @@
           "default": "shell",
           "markdownDescription": "%config.launchStrategy%"
         },
-        "agentry.autoStart": {
+        "cliGrid.autoStart": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.autoStart%"
         },
-        "agentry.revealOnFocus": {
+        "cliGrid.revealOnFocus": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "%config.revealOnFocus%"
         },
-        "agentry.profiles": {
+        "cliGrid.profiles": {
           "type": "object",
           "scope": "window",
           "markdownDescription": "%config.profiles%",
@@ -418,16 +613,21 @@
             }
           }
         },
-        "agentry.showHiddenFiles": {
+        "cliGrid.showHiddenFiles": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "%config.showHiddenFiles%"
+        },
+        "cliGrid.lockAgentPanes": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.lockAgentPanes%"
         }
       }
     },
     "walkthroughs": [
       {
-        "id": "agentry.getStarted",
+        "id": "cliGrid.getStarted",
         "title": "%walkthrough.title%",
         "description": "%walkthrough.description%",
         "steps": [
@@ -447,7 +647,7 @@
               "markdown": "media/walkthrough-agent.md"
             },
             "completionEvents": [
-              "onCommand:agentry.newAgent"
+              "onCommand:cliGrid.newAgent"
             ]
           },
           {
@@ -458,7 +658,7 @@
               "markdown": "media/walkthrough-layout.md"
             },
             "completionEvents": [
-              "onCommand:agentry.applyLayout"
+              "onCommand:cliGrid.applyLayout"
             ]
           }
         ]
@@ -467,12 +667,43 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agentry",
-          "title": "Agentry",
-          "icon": "media/agentry.svg"
+          "id": "cliGrid",
+          "title": "CLI Grid",
+          "icon": "media/cli-grid.svg"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "cliGrid.rename",
+        "key": "f2",
+        "when": "focusedView == cliGrid.files"
+      },
+      {
+        "command": "cliGrid.delete",
+        "key": "delete",
+        "mac": "cmd+backspace",
+        "when": "focusedView == cliGrid.files"
+      },
+      {
+        "command": "cliGrid.copy",
+        "key": "ctrl+c",
+        "mac": "cmd+c",
+        "when": "focusedView == cliGrid.files"
+      },
+      {
+        "command": "cliGrid.cut",
+        "key": "ctrl+x",
+        "mac": "cmd+x",
+        "when": "focusedView == cliGrid.files"
+      },
+      {
+        "command": "cliGrid.paste",
+        "key": "ctrl+v",
+        "mac": "cmd+v",
+        "when": "focusedView == cliGrid.files"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
@@ -481,7 +712,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext ts",
     "package": "vsce package --no-dependencies",
-    "reinstall": "npm run build && vsce package --no-dependencies -o agentry.vsix && code --install-extension agentry.vsix --force"
+    "reinstall": "npm run build && vsce package --no-dependencies -o cli-grid.vsix && code --install-extension cli-grid.vsix --force"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
@@ -494,7 +725,7 @@
     "typescript-eslint": "^8.46.0"
   },
   "bugs": {
-    "url": "https://github.com/suzup/agentry/issues"
+    "url": "https://github.com/suzup/cli-grid/issues"
   },
-  "homepage": "https://github.com/suzup/agentry#readme"
+  "homepage": "https://github.com/suzup/cli-grid#readme"
 }

@@ -28,13 +28,13 @@ jobs:
           npm run lint
 
       - name: Package
-        run: npx vsce package --no-dependencies -o agentry.vsix
+        run: npx vsce package --no-dependencies -o cli-grid.vsix
 
       # Attach the .vsix so people can install without a marketplace account.
       - name: Attach to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: agentry.vsix
+          files: cli-grid.vsix
           generate_release_notes: true
 
       # Both registries are optional, so a fork can still cut releases. The
@@ -45,10 +45,10 @@ jobs:
       # the VS Code Marketplace needs an Azure subscription.
       - name: Publish to Open VSX
         if: ${{ secrets.OVSX_PAT != '' }}
-        run: npx ovsx publish agentry.vsix --pat "${{ secrets.OVSX_PAT }}"
+        run: npx ovsx publish cli-grid.vsix --pat "${{ secrets.OVSX_PAT }}"
 
       - name: Publish to the VS Code Marketplace
         if: ${{ secrets.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx vsce publish --no-dependencies --packagePath agentry.vsix
+        run: npx vsce publish --no-dependencies --packagePath cli-grid.vsix

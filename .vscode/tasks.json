@@ -9,7 +9,7 @@
       "group": { "kind": "build", "isDefault": true },
       "presentation": { "reveal": "never", "panel": "dedicated" },
       "problemMatcher": {
-        "owner": "agentry",
+        "owner": "cliGrid",
         "source": "esbuild",
         "fileLocation": ["relative", "${workspaceFolder}"],
         "pattern": {

@@ -4,4 +4,4 @@ out/
 *.vsix
 *.log
 .DS_Store
-agentry.vsix
+cli-grid.vsix

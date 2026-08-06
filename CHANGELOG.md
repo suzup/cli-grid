@@ -6,14 +6,14 @@ First release.
 
 ### Added
 
-- **Agentry view container** in the Activity Bar, holding three views:
+- **CLI Grid view container** in the Activity Bar, holding three views:
   **Agents**, **Files** and **Layout**.
-- **Per-folder configuration** in `.vscode/agentry.json`. Opening a folder
+- **Per-folder configuration** in `.vscode/cli-grid.json`. Opening a folder
   restores its agents and split; a different set of agents is a different
   folder. Commit the file to share a setup, or gitignore it to keep it local.
 - **Built-in CLI profiles** for Claude Code, Codex and Gemini, with a
   new-vs-resume choice per launch, per profile or per agent. Arguments are
-  passed through untouched, and `agentry.profiles` adds or hides entries.
+  passed through untouched, and `cliGrid.profiles` adds or hides entries.
 - **Files view scoped to the focused agent** — selecting an agent, or clicking
   its terminal tab, switches the tree to the folder that CLI runs in. File icons
   and git colours come from the icon theme and the built-in Git extension.
@@ -23,6 +23,25 @@ First release.
 - **Layouts that distribute terminals** into their panes: 1, 2 × 1, 1 × 2,
   3 × 1, 2 × 2, 3 × 2, 4 × 2, plus `Auto`, which picks the smallest split that
   fits the running agents. More agents than panes wrap into tabs.
+- **A file pane beside the grid.** Panes holding an agent are locked, so files
+  opened from the Files view — or from quick open, or go to definition — split
+  off one pane next to the grid and stack there as ordinary tabs, leaving the
+  grid its shape. Re-splitting the grid takes them along. Turn it off with
+  `cliGrid.lockAgentPanes`.
+- **Drag out of the Files view** — onto an editor group, onto a terminal, which
+  pastes the path, or into another window. Multi-select works.
+- **Drop into the Files view to copy** — from another agent's folder, from the
+  Explorer, or from outside the window. The drop target's folder receives the
+  copy, and a name already in use gets " copy" appended, so nothing is
+  overwritten and nothing is moved out of where it was.
+- **File operations on the Files view**: new file, new folder, rename (`F2`),
+  delete to the trash, cut/copy/paste (`Ctrl+X`/`C`/`V`), copy path, copy
+  relative path, reveal in the OS file manager, reveal in VS Code's Explorer,
+  open in the integrated terminal. Where the workbench already has the command
+  it is forwarded to it; rename and paste-after-cut go through `WorkspaceEdit`,
+  so the file-operation participants run — imports get updated — and the change
+  is undoable. Delete honours `explorer.confirmDelete` and asks once for a whole
+  selection rather than once per file.
 - **Remote support** — declared as a workspace extension, so under Remote-WSL,
   Remote-SSH or a dev container the folder picker, CLI detection and terminals
   all run on the remote host.

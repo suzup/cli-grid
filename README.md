@@ -1,15 +1,15 @@
-# Agentry
+# CLI Grid
 
 Run several CLI coding agents side by side — Claude Code, Codex, Gemini CLI —
 without losing track of which repository each one is sitting in.
 
 VS Code already has a file tree, git decorations, a terminal grid and per-folder
-configuration. Agentry does not rebuild any of that. It supplies the thin
+configuration. CLI Grid does not rebuild any of that. It supplies the thin
 layer those pieces are missing: a binding between **an agent, a folder and a
 pane**.
 
 ```
-┌ AGENTRY ────────────┬──────────────────┬──────────────────┐
+┌ CLI GRID ───────────┬──────────────────┬──────────────────┐
 │ ▾ AGENTS       + ⟳  │ ✨ Claude · api   │ 🚀 Codex · api    │
 │  ▾ work    main ↑2  │                  │                  │
 │    ✨ Claude  running│                  │                  │
@@ -47,18 +47,30 @@ up again tomorrow.
 - **Layouts that actually split** — 2 × 1, 2 × 2, 3 × 2 and so on, with the
   terminals distributed into the panes rather than stacked in the first one.
   `Auto` picks the smallest split that fits the agents you have.
+- **Files open beside the grid, never inside it.** The panes holding agents are
+  locked, so a file — from the Files view, quick open, or go to definition —
+  lands in one pane of its own next to the grid. They are ordinary editors:
+  drag the tab where you want it, split it, drag files out of the Files view.
+- **Drop files into the Files view to copy them there** — from another agent's
+  folder, from the Explorer, or from outside the window. Dropping on a folder
+  copies into it; a name that is taken gets " copy" rather than overwriting.
+- **The Explorer's operations, on that tree** — new file, new folder, rename
+  (`F2`), delete to the trash, cut/copy/paste, copy path, reveal in the OS file
+  manager, open in a terminal. Renaming goes through the workbench, so
+  TypeScript and the like still fix up the imports that pointed at the old path,
+  and it undoes with `Ctrl+Z`.
 
 ## How it is configured
 
-Agentry is configured **per folder**, the same way `.vscode/settings.json` is.
+CLI Grid is configured **per folder**, the same way `.vscode/settings.json` is.
 There is nothing to name, nothing stored elsewhere, and nothing to find again.
 
 ```
 File › Open Folder...   ~/work
 ```
 
-Click the Agentry icon in the Activity Bar, make the folder a project, then
-add agents. That writes `.vscode/agentry.json`:
+Click the CLI Grid icon in the Activity Bar, make the folder a project, then
+add agents. That writes `.vscode/cli-grid.json`:
 
 ```jsonc
 {
@@ -81,12 +93,12 @@ opening a parent directory full of repositories the natural shape. An absolute
 path works too, for a repository that lives somewhere else entirely.
 
 Agents are listed but **not started** until you select them, so opening a folder
-never launches a CLI you did not ask for. Set `agentry.autoStart` for the
+never launches a CLI you did not ask for. Set `cliGrid.autoStart` for the
 opposite.
 
 ## New vs resume
 
-Agentry does not manage conversation state. It only chooses which arguments
+CLI Grid does not manage conversation state. It only chooses which arguments
 to pass; the CLI owns everything after that.
 
 | CLI | new | resume |
@@ -96,7 +108,7 @@ to pass; the CLI owns everything after that.
 | Gemini | `gemini` | `gemini --resume` |
 
 `Enter` uses the default mode; the **🕘 / +** button on each row uses the other
-one. Change the default with `agentry.defaultMode`, per profile, or per agent
+one. Change the default with `cliGrid.defaultMode`, per profile, or per agent
 via `"mode"` in the project file.
 
 Defaults ship as `new` because `claude --continue` exits with an error in a
@@ -104,11 +116,11 @@ folder that has no previous conversation.
 
 ## Custom CLIs
 
-`agentry.profiles` is merged over the built-ins. Arguments are passed through
+`cliGrid.profiles` is merged over the built-ins. Arguments are passed through
 untouched, so anything the CLI accepts works here.
 
 ```jsonc
-"agentry.profiles": {
+"cliGrid.profiles": {
   "claude": {
     "args": { "new": ["--model", "opus"], "resume": ["--continue"] },
     "defaultMode": "resume"
@@ -134,12 +146,13 @@ terminals start on the remote machine.
 
 | Setting | Default | |
 | --- | --- | --- |
-| `agentry.defaultMode` | `new` | `new` or `resume` |
-| `agentry.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
-| `agentry.autoStart` | `false` | Start the folder's agents as soon as it opens |
-| `agentry.revealOnFocus` | `true` | Point the Files view at the selected agent's folder |
-| `agentry.showHiddenFiles` | `false` | Show dotfiles in the Files view |
-| `agentry.profiles` | `{}` | Merged over the built-in CLI profiles |
+| `cliGrid.defaultMode` | `new` | `new` or `resume` |
+| `cliGrid.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
+| `cliGrid.autoStart` | `false` | Start the folder's agents as soon as it opens |
+| `cliGrid.revealOnFocus` | `true` | Point the Files view at the selected agent's folder |
+| `cliGrid.showHiddenFiles` | `false` | Show dotfiles in the Files view |
+| `cliGrid.lockAgentPanes` | `true` | Lock the panes holding an agent, so files open beside the grid |
+| `cliGrid.profiles` | `{}` | Merged over the built-in CLI profiles |
 
 ## Development
 

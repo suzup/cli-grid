@@ -15,12 +15,12 @@ export class StatusBar implements vscode.Disposable {
     private readonly registry: AgentRegistry,
   ) {
     this.item = vscode.window.createStatusBarItem(
-      'agentry.status',
+      'cliGrid.status',
       vscode.StatusBarAlignment.Left,
       90,
     );
-    this.item.name = 'Agentry';
-    this.item.command = 'agentry.showAgents';
+    this.item.name = 'CLI Grid';
+    this.item.command = 'cliGrid.showAgents';
 
     this.disposables.push(
       this.item,
@@ -37,16 +37,16 @@ export class StatusBar implements vscode.Disposable {
       .projects()
       .reduce((total, p) => total + p.config.agents.length, 0);
 
-    this.item.text = running > 0 ? `$(zap) ${running}` : '$(zap) Agentry';
+    this.item.text = running > 0 ? `$(zap) ${running}` : '$(zap) CLI Grid';
     this.item.tooltip = [
       running > 0
         ? vscode.l10n.t('{0} agent(s) running', running)
         : vscode.l10n.t('No agents running'),
       this.projects.any
         ? vscode.l10n.t('{0} configured in this folder', configured)
-        : vscode.l10n.t('This folder is not an Agentry project'),
+        : vscode.l10n.t('This folder is not a CLI Grid project'),
       '',
-      vscode.l10n.t('Click to open Agentry'),
+      vscode.l10n.t('Click to open CLI Grid'),
     ].join('\n');
     this.item.show();
   }

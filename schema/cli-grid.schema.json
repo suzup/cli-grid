@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Agentry project",
-  "description": "Declares which CLI agents belong to this folder. Lives at .vscode/agentry.json.",
+  "title": "CLI Grid project",
+  "description": "Declares which CLI agents belong to this folder. Lives at .vscode/cli-grid.json.",
   "type": "object",
   "properties": {
     "layout": {
@@ -35,7 +35,7 @@
           },
           "cli": {
             "type": "string",
-            "description": "Profile id, e.g. \"claude\", \"codex\", \"gemini\", or one you defined under agentry.profiles."
+            "description": "Profile id, e.g. \"claude\", \"codex\", \"gemini\", or one you defined under cliGrid.profiles."
           },
           "mode": {
             "type": "string",
@@ -43,7 +43,7 @@
               "new",
               "resume"
             ],
-            "description": "Overrides agentry.defaultMode for this agent."
+            "description": "Overrides cliGrid.defaultMode for this agent."
           }
         }
       }

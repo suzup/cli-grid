@@ -11,8 +11,18 @@ import type { LaunchMode } from './types.js';
  * to name, nothing stored elsewhere, and nothing to find again later.
  */
 export const CONFIG_DIR = '.vscode';
-export const CONFIG_FILE = 'agentry.json';
+export const CONFIG_FILE = 'cli-grid.json';
 export const CONFIG_RELATIVE = `${CONFIG_DIR}/${CONFIG_FILE}`;
+
+/**
+ * Names this file carried before the extension settled on one, newest first.
+ *
+ * Read-only: a project written under an old name keeps working, and the first
+ * write moves it to the current one. All of this can go once 0.1.0 has shipped
+ * and nobody is carrying a config from before it.
+ */
+const LEGACY_FILES = ['agent-grid.json', 'agentry.json'];
+const LEGACY_RELATIVE = LEGACY_FILES.map((file) => `${CONFIG_DIR}/${file}`);
 
 export interface AgentSpec {
   /** Folder reference relative to the project root; "." is the root itself. */
@@ -33,13 +43,32 @@ export function configUri(root: vscode.Uri): vscode.Uri {
 }
 
 export async function hasConfig(root: vscode.Uri): Promise<boolean> {
-  return exists(configUri(root));
+  return (await presentConfigUri(root)) !== undefined;
+}
+
+/** The config that is actually on disk: the current name, or an old one. */
+async function presentConfigUri(root: vscode.Uri): Promise<vscode.Uri | undefined> {
+  if (await exists(configUri(root))) return configUri(root);
+
+  for (const file of LEGACY_FILES) {
+    const legacy = join(root, CONFIG_DIR, file);
+    if (await exists(legacy)) return legacy;
+  }
+  return undefined;
+}
+
+/** The file to show the user: whichever is there, or where a new one would go. */
+export async function openableConfigUri(root: vscode.Uri): Promise<vscode.Uri> {
+  return (await presentConfigUri(root)) ?? configUri(root);
 }
 
 export async function readConfig(root: vscode.Uri): Promise<ProjectConfig | undefined> {
+  const present = await presentConfigUri(root);
+  if (!present) return undefined;
+
   let bytes: Uint8Array;
   try {
-    bytes = await vscode.workspace.fs.readFile(configUri(root));
+    bytes = await vscode.workspace.fs.readFile(present);
   } catch {
     return undefined;
   }
@@ -139,7 +168,7 @@ export async function candidateFolders(root: vscode.Uri): Promise<vscode.Uri[]> 
 }
 
 /**
- * Tracks which open folders are Agentry projects.
+ * Tracks which open folders are CLI Grid projects.
  *
  * The config file can appear, change or vanish while the window is open — from
  * a git pull as easily as from our own writes — so this watches rather than
@@ -153,12 +182,17 @@ export class ProjectWatcher implements vscode.Disposable {
   readonly onDidChange = this.changeEmitter.event;
 
   constructor() {
-    const watcher = vscode.workspace.createFileSystemWatcher(`**/${CONFIG_RELATIVE}`);
+    for (const relative of [CONFIG_RELATIVE, ...LEGACY_RELATIVE]) {
+      const watcher = vscode.workspace.createFileSystemWatcher(`**/${relative}`);
+      this.disposables.push(
+        watcher,
+        watcher.onDidCreate(() => void this.refresh()),
+        watcher.onDidChange(() => void this.refresh()),
+        watcher.onDidDelete(() => void this.refresh()),
+      );
+    }
+
     this.disposables.push(
-      watcher,
-      watcher.onDidCreate(() => void this.refresh()),
-      watcher.onDidChange(() => void this.refresh()),
-      watcher.onDidDelete(() => void this.refresh()),
       vscode.workspace.onDidChangeWorkspaceFolders(() => void this.refresh()),
     );
     void this.refresh();
@@ -170,7 +204,7 @@ export class ProjectWatcher implements vscode.Disposable {
       const config = await readConfig(folder.uri);
       if (config) this.roots.set(folder.uri.toString(), config);
     }
-    void vscode.commands.executeCommand('setContext', 'agentry.isProject', this.roots.size > 0);
+    void vscode.commands.executeCommand('setContext', 'cliGrid.isProject', this.roots.size > 0);
     this.changeEmitter.fire();
   }
 

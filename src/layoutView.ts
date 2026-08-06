@@ -51,10 +51,10 @@ export class LayoutTreeProvider implements vscode.TreeDataProvider<LayoutPreset>
     item.iconPath = new vscode.ThemeIcon(
       preset.id === this.current ? 'check' : 'blank',
     );
-    item.contextValue = 'agentry.layout';
+    item.contextValue = 'cliGrid.layout';
     item.tooltip = preset.detail;
     item.command = {
-      command: 'agentry.applyLayout',
+      command: 'cliGrid.applyLayout',
       title: preset.detail,
       arguments: [preset.id],
     };
