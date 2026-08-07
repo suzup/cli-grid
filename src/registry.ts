@@ -9,8 +9,21 @@ export interface LaunchTarget {
   root: vscode.Uri;
   folderRef: string;
   folder: vscode.Uri;
+  /** The name the agent was given, if any; the folder name stands in for it. */
+  name?: string;
   /** 1-based editor group the terminal should open in. */
   viewColumn?: number;
+}
+
+/**
+ * What the tab says: the agent first, the CLI after.
+ *
+ * The same way round as the row in the view, and for the same reason — with
+ * four panes open, which agent a tab belongs to is what you are scanning for,
+ * and every one of them says Claude Code.
+ */
+export function terminalName(profile: AgentProfile, target: LaunchTarget): string {
+  return `${target.name?.trim() || basename(target.folder.path)} · ${profile.label}`;
 }
 
 /** Tracks which terminal is which agent. Config lives in the project file. */
@@ -54,11 +67,10 @@ export class AgentRegistry implements vscode.Disposable {
   launch(profile: AgentProfile, mode: LaunchMode, target: LaunchTarget): RunningAgent {
     const strategy = setting('launchStrategy');
 
-    const folderName = basename(target.folder.path);
     const args = mode === 'resume' ? profile.args.resume : profile.args.new;
 
     const options: vscode.TerminalOptions = {
-      name: `${profile.label} · ${folderName}`,
+      name: terminalName(profile, target),
       cwd: target.folder,
       iconPath: new vscode.ThemeIcon(profile.icon),
       isTransient: true,

@@ -8,7 +8,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { URI } from 'vscode-uri';
-import { FileNode, contains, freeName } from '../files.js';
+import { FileNode, contains, freeName, searchFiles } from '../files.js';
+import { relativeTo } from '../paths.js';
 
 let dir: string;
 let root: URI;
@@ -84,5 +85,50 @@ describe('freeName', () => {
   it('handles a name with no extension', async () => {
     await touch('Makefile');
     assert.equal((await freeName(root, 'Makefile')).path, `${root.path}/Makefile copy`);
+  });
+});
+
+describe('searchFiles', () => {
+  let tree: URI;
+
+  /** A small tree with the shapes the walk has opinions about. */
+  before(async () => {
+    const base = path.join(dir, 'search');
+    tree = URI.file(base);
+
+    for (const folder of ['src/deep', 'node_modules/pkg', '.hidden']) {
+      await fs.mkdir(path.join(base, folder), { recursive: true });
+    }
+    await fs.writeFile(path.join(base, 'top.ts'), '');
+    await fs.writeFile(path.join(base, 'src', 'index.ts'), '');
+    await fs.writeFile(path.join(base, 'src', 'deep', 'index.ts'), '');
+    await fs.writeFile(path.join(base, 'node_modules', 'pkg', 'index.js'), '');
+    await fs.writeFile(path.join(base, '.hidden', 'secret.ts'), '');
+    await fs.writeFile(path.join(base, '.env'), '');
+  });
+
+  const found = async (showHidden = false) =>
+    (await searchFiles(tree, showHidden)).files.map((uri) => relativeTo(tree, uri)).sort();
+
+  it('finds files at every depth under the folder', async () => {
+    assert.deepEqual(await found(), ['src/deep/index.ts', 'src/index.ts', 'top.ts']);
+  });
+
+  it('comes back shallowest first, so the folder itself leads the list', async () => {
+    const { files } = await searchFiles(tree, false);
+    assert.deepEqual(files.map((uri) => relativeTo(tree, uri))[0], 'top.ts');
+  });
+
+  it('leaves out what nobody searches by name', async () => {
+    const all = await found(true);
+    assert.ok(!all.some((p) => p.startsWith('node_modules/')), `walked node_modules: ${all}`);
+  });
+
+  it('includes hidden files only when the view is showing them', async () => {
+    assert.ok(!(await found()).includes('.env'));
+
+    const hidden = await found(true);
+    assert.ok(hidden.includes('.env'));
+    assert.ok(hidden.includes('.hidden/secret.ts'));
   });
 });

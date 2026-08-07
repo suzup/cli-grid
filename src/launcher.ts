@@ -135,6 +135,7 @@ export class Launcher {
         root: node.root,
         folderRef: node.spec.folder,
         folder: node.folder,
+        ...(node.spec.name ? { name: node.spec.name } : {}),
         viewColumn: column,
       },
     );
@@ -162,6 +163,7 @@ export class Launcher {
         root,
         folderRef: spec.folder,
         folder: resolveFolder(root, spec.folder),
+        ...(spec.name ? { name: spec.name } : {}),
         viewColumn: columnFor(index, preset),
       });
     }

@@ -35,6 +35,7 @@
   "view.files": "Files",
   "view.layout": "Layout",
   "cmd.applyLayout": "Apply Layout",
+  "cmd.findFile": "Find File in the Agent's Folder",
   "cmd.toggleHiddenFiles": "Show/Hide Hidden Files",
   "config.showHiddenFiles": "Show dotfiles in the Files view. `.vscode` is always shown.",
   "cmd.startAllResumed": "Start All, Resuming",

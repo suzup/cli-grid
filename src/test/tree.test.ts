@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { URI } from 'vscode-uri';
 import { GitStatus } from '../git.js';
-import { clearProfileCache } from '../profiles.js';
+import { clearProfileCache, findProfile } from '../profiles.js';
 import { ProjectWatcher, type AgentSpec } from '../project.js';
-import { AgentRegistry } from '../registry.js';
+import { AgentRegistry, terminalName } from '../registry.js';
 import { AgentNode, AgentsTreeProvider, agentLabel, nameFor } from '../tree.js';
 
 const root = URI.file('/home/dev/work');
@@ -44,6 +44,24 @@ describe('what an agent row is called', () => {
 
   it('falls back to the folder when the name is only spaces', () => {
     assert.equal(agentLabel(node({ cli: 'claude', folder: 'api', name: '   ' })), 'api');
+  });
+});
+
+describe('what the tab says', () => {
+  const claude = findProfile('claude')!;
+  const target = (folder: string, name?: string) => ({
+    root,
+    folderRef: folder,
+    folder: URI.file(`${root.path}/${folder}`),
+    ...(name ? { name } : {}),
+  });
+
+  it('leads with the agent and follows with the CLI, like the row does', () => {
+    assert.equal(terminalName(claude, target('api')), 'api · Claude Code');
+  });
+
+  it('uses the name the row shows when the agent has one', () => {
+    assert.equal(terminalName(claude, target('api', 'billing')), 'billing · Claude Code');
   });
 });
 

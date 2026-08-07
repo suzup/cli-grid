@@ -2,11 +2,12 @@ import * as vscode from 'vscode';
 import { registerCommands } from './commands.js';
 import { SECTION, setting, updateSetting } from './config.js';
 import { registerFileCommands } from './fileops.js';
-import { FilesTreeProvider } from './files.js';
+import { FilesTreeProvider, searchFiles } from './files.js';
 import { GitStatus } from './git.js';
 import { EditorGrid } from './grid.js';
 import { Launcher } from './launcher.js';
 import { LayoutController, LayoutTreeProvider } from './layouts.js';
+import { basename, dirnameOf, relativeTo } from './paths.js';
 import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
@@ -123,6 +124,33 @@ export function activate(context: vscode.ExtensionContext): void {
 
     'cliGrid.applyLayout': (id?: string) => id && layouts.apply(id),
 
+    // Quick Open searches the folder the window was opened on, which in a CLI
+    // Grid project is a wrapper holding the folders the work is actually in.
+    // This searches the one the selected CLI is working in — the folder whose
+    // output you have in front of you — and takes `Ctrl+P` over for it.
+    'cliGrid.findFile': async () => {
+      const scope = files.currentScope();
+      const agentFolder = registry
+        .list()
+        .some((agent) => agent.folder.toString() === scope?.toString());
+
+      // Until an agent is focused the tree is showing the folder the window was
+      // opened on, and searching that is the workbench's own job — done better,
+      // with its index. So `Ctrl+P` stays itself right up to the point where
+      // there is something more specific for it to mean.
+      if (!scope || !agentFolder) {
+        await vscode.commands.executeCommand('workbench.action.quickOpen');
+        return;
+      }
+
+      const picked = await vscode.window.showQuickPick(searchItems(scope), {
+        placeHolder: vscode.l10n.t('Search files in {0}', basename(scope.path)),
+        // The folder a name sits in is half of telling two `index.ts` apart.
+        matchOnDescription: true,
+      });
+      if (picked) await grid.openFile(picked.uri);
+    },
+
     'cliGrid.toggleHiddenFiles': async () => {
       await updateSetting('showHiddenFiles', !setting('showHiddenFiles'));
       files.refresh();
@@ -155,6 +183,39 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   void start(context, projects, launcher, layouts);
+}
+
+interface FileItem extends vscode.QuickPickItem {
+  uri: vscode.Uri;
+}
+
+/**
+ * The files under a folder as something to pick from.
+ *
+ * The name leads and the folder describes it, so typing matches a file name
+ * first and the path only once `matchOnDescription` widens it — which is the
+ * order you think in when you know what a file is called.
+ */
+async function searchItems(scope: vscode.Uri): Promise<FileItem[]> {
+  const { files, truncated } = await searchFiles(scope);
+
+  if (truncated) {
+    void vscode.window.showInformationMessage(
+      vscode.l10n.t('{0} has too many files to list them all; searching the first {1}.',
+        basename(scope.path),
+        files.length,
+      ),
+    );
+  }
+
+  return files.map((uri) => {
+    const folder = relativeTo(scope, dirnameOf(uri));
+    return {
+      uri,
+      label: basename(uri.path),
+      description: folder === '.' ? undefined : folder,
+    } satisfies FileItem;
+  });
 }
 
 export function deactivate(): void {

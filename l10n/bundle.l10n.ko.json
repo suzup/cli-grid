@@ -36,6 +36,8 @@
   "This folder is already a CLI Grid project.": "이 폴더는 이미 CLI Grid 프로젝트입니다.",
   "Which folder should become a CLI Grid project?": "어느 폴더를 CLI Grid 프로젝트로 만들까요?",
   "Open File": "파일 열기",
+  "Search files in {0}": "{0} 안에서 파일 찾기",
+  "{0} has too many files to list them all; searching the first {1}.": "{0}에 파일이 너무 많습니다. 처음 {1}개에서 찾습니다.",
   "Single pane": "1분할",
   "Two columns": "2열",
   "Two rows": "2행",

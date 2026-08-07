@@ -35,6 +35,7 @@
   "view.files": "파일",
   "view.layout": "레이아웃",
   "cmd.applyLayout": "레이아웃 적용",
+  "cmd.findFile": "에이전트 폴더에서 파일 찾기",
   "cmd.toggleHiddenFiles": "숨김 파일 표시/숨기기",
   "config.showHiddenFiles": "파일 뷰에 dotfile을 표시합니다. `.vscode`는 항상 보입니다.",
   "cmd.startAllResumed": "전부 이어서 시작",

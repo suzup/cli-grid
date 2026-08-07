@@ -249,6 +249,78 @@ export class FilesTreeProvider
   }
 }
 
+/** How many files the name search collects before it gives up looking. */
+const SEARCH_LIMIT = 10000;
+
+export interface FileSearch {
+  /** Shallowest first, so the top of the list is the top of the folder. */
+  files: vscode.Uri[];
+  /** True when the walk stopped at the limit rather than running out. */
+  truncated: boolean;
+}
+
+/**
+ * Every file under a folder, for searching one out by name.
+ *
+ * Its own walk rather than `workspace.findFiles`, which only ever searches the
+ * folders the window was opened on. An agent regularly works somewhere outside
+ * them — a worktree, a sibling checkout — and that gap is the reason this view
+ * exists at all, so the search has to answer the same question the tree does.
+ *
+ * The folders the tree pushes to the bottom are skipped outright here: nobody
+ * is looking for a file in `node_modules` by name, and walking it is most of
+ * what a search like this would ever cost.
+ */
+export async function searchFiles(
+  root: vscode.Uri,
+  showHidden = setting('showHiddenFiles'),
+): Promise<FileSearch> {
+  const files: vscode.Uri[] = [];
+  let level = [root];
+
+  // Breadth-first, so hitting the limit costs the deepest files rather than
+  // whichever branch happens to sort first — and a level is read in parallel,
+  // which is what keeps a large tree from being read one directory at a time.
+  while (level.length && files.length < SEARCH_LIMIT) {
+    const read = await Promise.all(level.map((dir) => readDirectory(dir)));
+    const next: vscode.Uri[] = [];
+
+    for (const [dir, entries] of read) {
+      for (const [name, type] of entries) {
+        if (DEMOTED.has(name)) continue;
+        if (!showHidden && name.startsWith('.')) continue;
+
+        const uri = join(dir, name);
+
+        // Only a real directory is descended into. A symlinked one is left out
+        // of both the walk and the results: following it can loop back on
+        // itself, and there is no name in there this search would miss.
+        if (type & vscode.FileType.Directory) {
+          if (type === vscode.FileType.Directory) next.push(uri);
+          continue;
+        }
+
+        if (files.push(uri) >= SEARCH_LIMIT) return { files, truncated: true };
+      }
+    }
+
+    level = next;
+  }
+
+  return { files, truncated: false };
+}
+
+/** The entries of a directory, paired with it; unreadable ones come back empty. */
+async function readDirectory(
+  dir: vscode.Uri,
+): Promise<[vscode.Uri, [string, vscode.FileType][]]> {
+  try {
+    return [dir, await vscode.workspace.fs.readDirectory(dir)];
+  } catch {
+    return [dir, []];
+  }
+}
+
 /** Resources in the drop that the file system can read directly. */
 async function droppedUris(transfer: vscode.DataTransfer): Promise<vscode.Uri[]> {
   const list = await transfer.get('text/uri-list')?.asString();

@@ -46,6 +46,11 @@ up again tomorrow.
 - **A Files view that follows the agent you are looking at.** Select an agent —
   or just click its terminal tab — and the tree switches to the folder that CLI
   is working in, with the branch in the header.
+- **`Ctrl+P` finds a file in that folder, not in the wrapper.** In a CLI Grid
+  project the folder you opened is a container; the work is in the agents'
+  folders, so that is where the search goes — wherever they are, including
+  outside the workspace. Until an agent is focused, `Ctrl+P` is Quick Open as
+  usual.
 - **Real git**, from VS Code's own Git extension: branch, ahead/behind, change
   count, and the usual colours on changed files. Folders outside the workspace
   are registered explicitly, so agents pointed anywhere still get all of it.

@@ -43,10 +43,20 @@ export function registerFileCommands(
   const register = (id: string, handler: CommandHandler) =>
     registerCommand(context, id, handler);
 
-  /** Forwards to a workbench command that resolves its own multi-select. */
+  /**
+   * Forwards to a workbench command that resolves its own multi-select.
+   *
+   * Invoked with nothing selected — from the menu that comes up on the empty
+   * part of the view — these apply to the folder the view is showing, which is
+   * the only thing they could sensibly mean there.
+   */
   const forward = (id: string, command: string) =>
     register(id, async (node?: FileNode, nodes?: FileNode[]) => {
-      for (const target of chosen(node, nodes)) {
+      const rows = chosen(node, nodes);
+      const scope = files.currentScope();
+      if (!rows.length && scope) rows.push(new FileNode(scope, basename(scope.path), true));
+
+      for (const target of rows) {
         await vscode.commands.executeCommand(command, target.uri);
       }
     });
@@ -107,12 +117,27 @@ export function registerFileCommands(
     if (targets.length && (await remove(targets))) files.refresh();
   });
 
+  /**
+   * Holding the clipboard in a context key as well as a variable, so the Paste
+   * entry on the menu can be absent rather than present and inert — that menu
+   * comes up on empty space, where there is no row to explain why it did
+   * nothing.
+   */
+  const hold = (next: typeof clipboard): void => {
+    clipboard = next;
+    void vscode.commands.executeCommand(
+      'setContext',
+      'cliGrid.canPaste',
+      Boolean(next?.uris.length),
+    );
+  };
+
   register('cliGrid.copy', (node?: FileNode, nodes?: FileNode[]) => {
-    clipboard = { uris: chosen(node, nodes).map((n) => n.uri), cut: false };
+    hold({ uris: chosen(node, nodes).map((n) => n.uri), cut: false });
   });
 
   register('cliGrid.cut', (node?: FileNode, nodes?: FileNode[]) => {
-    clipboard = { uris: chosen(node, nodes).map((n) => n.uri), cut: true };
+    hold({ uris: chosen(node, nodes).map((n) => n.uri), cut: true });
   });
 
   register('cliGrid.paste', async (node?: FileNode, nodes?: FileNode[]) => {
@@ -144,7 +169,7 @@ export function registerFileCommands(
     }
 
     // A cut is spent once pasted; a copy can go to several places.
-    if (clipboard.cut) clipboard = undefined;
+    if (clipboard.cut) hold(undefined);
     files.refresh();
     if (failures.length) {
       void vscode.window.showErrorMessage(vscode.l10n.t('Could not paste {0}', failures.join(', ')));

@@ -19,6 +19,13 @@ First release.
 - **Files view scoped to the focused agent** — selecting an agent, or clicking
   its terminal tab, switches the tree to the folder that CLI runs in. File icons
   and git colours come from the icon theme and the built-in Git extension.
+- **Find a file by name in the focused agent's folder** — `Ctrl+P` anywhere in a
+  CLI Grid project, the search button on the Files view, or _CLI Grid: Find File
+  in the Agent's Folder_. It walks the folder itself rather than going through
+  the workbench's search, so it reaches agents working outside the opened
+  folder, and what it finds opens in the file pane beside the grid. With no
+  agent focused there is nothing more specific to search than the folder the
+  window was opened on, so `Ctrl+P` hands back to Quick Open.
 - **Git for folders outside the workspace**, registered through the Git API's
   `openRepository`, so agents pointed anywhere still show branch, ahead/behind
   and change counts.
@@ -36,6 +43,9 @@ First release.
   Explorer, or from outside the window. The drop target's folder receives the
   copy, and a name already in use gets " copy" appended, so nothing is
   overwritten and nothing is moved out of where it was.
+- **A context menu on the empty part of the Files view** — new file, new folder,
+  paste, find, open in terminal — all acting on the folder the view is showing,
+  which is where you reach for New when no row is the one you mean.
 - **File operations on the Files view**: new file, new folder, rename (`F2`),
   delete to the trash, cut/copy/paste (`Ctrl+X`/`C`/`V`), copy path, copy
   relative path, reveal in the OS file manager, reveal in VS Code's Explorer,

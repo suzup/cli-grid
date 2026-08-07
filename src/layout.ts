@@ -57,16 +57,20 @@ export interface LayoutSpec {
 
 /**
  * `vscode.setEditorLayout` takes nested groups, and each level splits the
- * opposite way to the one above it. Orientation 0 splits with a horizontal
- * divider, so at the top level it means rows.
+ * opposite way to the one above it. Orientation 0 lays its groups out side by
+ * side, so it means columns; 1 stacks them, so at the top level it means rows.
+ *
+ * The workbench numbers the groups by walking this tree in order, so rows on
+ * the outside is also what makes the panes count left to right and then down —
+ * an agent's neighbour is the one beside it, not the one below.
  */
 export function toSpec(preset: LayoutPreset, filePane: boolean): LayoutSpec {
-  if (!filePane) return { orientation: 0, groups: rowsOf(preset) };
+  if (!filePane) return { orientation: 1, groups: rowsOf(preset) };
 
   // One level up: columns, the grid in the first and the files in the second.
   // The grid's own rows and columns then fall out the same way as above.
   return {
-    orientation: 1,
+    orientation: 0,
     groups: [
       { size: 1 - FILE_PANE_SIZE, groups: rowsOf(preset) },
       { size: FILE_PANE_SIZE },

@@ -66,8 +66,10 @@ describe('columnFor', () => {
 
 describe('toSpec', () => {
   it('splits into rows at the top level, then columns inside them', () => {
+    // Which is what numbers the panes across each row before going down: the
+    // first two groups are the top row, not the left column.
     assert.deepEqual(toSpec(grid2x2, false), {
-      orientation: 0,
+      orientation: 1,
       groups: [
         { size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
         { size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
@@ -80,7 +82,7 @@ describe('toSpec', () => {
 
     // Orientation flips: the outer split is now columns, so the grid's own rows
     // still come out as rows one level down.
-    assert.equal(spec.orientation, 1);
+    assert.equal(spec.orientation, 0);
     assert.equal(spec.groups.length, 2);
     assert.deepEqual(spec.groups[0]?.groups, rowsOf(grid2x2));
     assert.equal(spec.groups[1]?.size, FILE_PANE_SIZE);

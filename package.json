@@ -143,6 +143,12 @@
         "category": "CLI Grid"
       },
       {
+        "command": "cliGrid.findFile",
+        "title": "%cmd.findFile%",
+        "category": "CLI Grid",
+        "icon": "$(search)"
+      },
+      {
         "command": "cliGrid.toggleHiddenFiles",
         "title": "%cmd.toggleHiddenFiles%",
         "category": "CLI Grid",
@@ -343,19 +349,49 @@
           "group": "1_config@2"
         },
         {
-          "command": "cliGrid.toggleHiddenFiles",
+          "command": "cliGrid.findFile",
           "when": "view == cliGrid.files",
           "group": "navigation@1"
         },
         {
-          "command": "cliGrid.newFile",
+          "command": "cliGrid.toggleHiddenFiles",
           "when": "view == cliGrid.files",
           "group": "navigation@2"
         },
         {
-          "command": "cliGrid.newFolder",
+          "command": "cliGrid.newFile",
           "when": "view == cliGrid.files",
           "group": "navigation@3"
+        },
+        {
+          "command": "cliGrid.newFolder",
+          "when": "view == cliGrid.files",
+          "group": "navigation@4"
+        },
+        {
+          "command": "cliGrid.newFile",
+          "when": "view == cliGrid.files",
+          "group": "1_new@1"
+        },
+        {
+          "command": "cliGrid.newFolder",
+          "when": "view == cliGrid.files",
+          "group": "1_new@2"
+        },
+        {
+          "command": "cliGrid.paste",
+          "when": "view == cliGrid.files && cliGrid.canPaste",
+          "group": "2_clipboard@1"
+        },
+        {
+          "command": "cliGrid.findFile",
+          "when": "view == cliGrid.files",
+          "group": "3_open@1"
+        },
+        {
+          "command": "cliGrid.openInTerminal",
+          "when": "view == cliGrid.files",
+          "group": "3_open@2"
         }
       ],
       "view/item/context": [
@@ -691,6 +727,12 @@
     },
     "keybindings": [
       {
+        "command": "cliGrid.findFile",
+        "key": "ctrl+p",
+        "mac": "cmd+p",
+        "when": "cliGrid.isProject"
+      },
+      {
         "command": "cliGrid.rename",
         "key": "f2",
         "when": "focusedView == cliGrid.files"
@@ -719,7 +761,12 @@
         "mac": "cmd+v",
         "when": "focusedView == cliGrid.files"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "terminal.integrated.commandsToSkipShell": [
+        "cliGrid.findFile"
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
