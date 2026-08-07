@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { registerCommand, type CommandHandler } from './commands.js';
+import { confirmDelete } from './config.js';
 import { FileNode, contains, freeName, type FilesTreeProvider } from './files.js';
 import { basename, dirnameOf, exists, join } from './paths.js';
 
@@ -166,7 +167,7 @@ async function remove(targets: readonly FileNode[]): Promise<boolean> {
       ? first.name
       : vscode.l10n.t('the {0} selected files', String(targets.length));
 
-  if (vscode.workspace.getConfiguration('explorer').get<boolean>('confirmDelete', true)) {
+  if (confirmDelete()) {
     const move = vscode.l10n.t('Move to Trash');
     const answer = await vscode.window.showWarningMessage(
       vscode.l10n.t("Are you sure you want to delete {0}?", label),

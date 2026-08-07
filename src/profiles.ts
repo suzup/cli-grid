@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import * as os from 'node:os';
-import * as vscode from 'vscode';
-import type { AgentProfile, LaunchMode, ProfileArgs } from './types.js';
+import { profileOverrides, setting } from './config.js';
+import type { AgentProfile, LaunchMode } from './types.js';
 
 /**
  * Built-in profiles. Arguments were taken from each CLI's own documentation:
@@ -42,30 +42,30 @@ const BUILT_IN: AgentProfile[] = [
   },
 ];
 
-interface ProfileOverride {
-  label?: string;
-  command?: string;
-  args?: Partial<ProfileArgs>;
-  defaultMode?: LaunchMode;
-  icon?: string;
-  color?: string;
-  env?: Record<string, string>;
-  hidden?: boolean;
-}
+/**
+ * The built-ins with `cliGrid.profiles` applied over them.
+ *
+ * Memoised: `findProfile` is called per tree row per refresh, and each call
+ * would otherwise re-read the settings and rebuild every profile. The cache is
+ * dropped whenever the setting changes.
+ */
+let merged: AgentProfile[] | undefined;
 
 export function readProfiles(): AgentProfile[] {
-  const overrides = vscode.workspace
-    .getConfiguration('cliGrid')
-    .get<Record<string, ProfileOverride>>('profiles', {});
+  return (merged ??= mergeProfiles());
+}
 
-  const merged = new Map<string, AgentProfile>();
-  for (const base of BUILT_IN) merged.set(base.id, { ...base });
+function mergeProfiles(): AgentProfile[] {
+  const overrides = profileOverrides();
+
+  const byId = new Map<string, AgentProfile>();
+  for (const base of BUILT_IN) byId.set(base.id, { ...base });
 
   for (const [id, override] of Object.entries(overrides ?? {})) {
-    const base = merged.get(id);
+    const base = byId.get(id);
     if (!override?.command && !base) continue; // custom entries must name a command
 
-    merged.set(id, {
+    byId.set(id, {
       id,
       label: override.label ?? base?.label ?? id,
       command: override.command ?? base?.command ?? id,
@@ -83,7 +83,7 @@ export function readProfiles(): AgentProfile[] {
     });
   }
 
-  return [...merged.values()].filter((p) => !p.hidden);
+  return [...byId.values()].filter((p) => !p.hidden);
 }
 
 /** A profile with `resume` args is the only kind that can offer resume mode. */
@@ -96,10 +96,7 @@ export function findProfile(id: string): AgentProfile | undefined {
 }
 
 export function defaultMode(profile: AgentProfile): LaunchMode {
-  const global = vscode.workspace
-    .getConfiguration('cliGrid')
-    .get<LaunchMode>('defaultMode', 'new');
-  return profile.defaultMode ?? global;
+  return profile.defaultMode ?? setting('defaultMode');
 }
 
 /**
@@ -151,6 +148,13 @@ export async function isAvailable(command: string): Promise<boolean> {
   return result;
 }
 
-export function clearAvailabilityCache(): void {
+/**
+ * Forgets both caches.
+ *
+ * They are dropped together on purpose: a changed `command` is exactly the case
+ * where a remembered "not on PATH" would be wrong about the new one.
+ */
+export function clearProfileCache(): void {
+  merged = undefined;
   availability.clear();
 }

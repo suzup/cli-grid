@@ -33,17 +33,18 @@ kind in `layout.ts` or `paths.ts` and it is testable for free.
 
 | File | |
 | --- | --- |
-| `extension.ts` | activation and command wiring |
+| `extension.ts` | activation, and the table of what every command does |
+| `commands.ts` / `config.ts` | registering commands; every setting, with its default |
 | `grid.ts` | the editor area: agent panes, the file pane beside them, pane locks |
-| `fileops.ts` | the Files view's context menu — Explorer parity |
 | `project.ts` | reads and writes `.vscode/cli-grid.json`, watches for changes |
 | `launcher.ts` | the folder → CLI → terminal flow |
 | `registry.ts` | which terminal is which agent |
 | `tree.ts` | the Agents view |
-| `files.ts` | the Files view, scoped to the focused agent |
-| `layout.ts` / `layoutView.ts` | splits, pane assignment, the Layout view |
+| `files.ts` / `fileops.ts` | the Files view, and its Explorer-parity operations |
+| `layout.ts` / `layouts.ts` | split maths; the Layout view and applying a split |
 | `git.ts` | a thin read-only wrapper over the built-in Git extension's API |
 | `profiles.ts` | CLI profiles and PATH detection |
+| `paths.ts` | uri path arithmetic, with no workbench in it |
 
 ## Things worth knowing
 

@@ -1,6 +1,63 @@
 import * as vscode from 'vscode';
-import { AUTO_LAYOUT, LAYOUT_PRESETS, autoPreset, paneCount } from './layout.js';
+import type { EditorGrid } from './grid.js';
+import { AUTO_LAYOUT, LAYOUT_PRESETS, autoPreset, paneCount, resolveLayout } from './layout.js';
+import { updateConfig, type ProjectWatcher } from './project.js';
+import type { AgentRegistry } from './registry.js';
 import type { LayoutPreset } from './types.js';
+
+/**
+ * Choosing a split, applying it, and remembering it.
+ *
+ * The split belongs to the window rather than to any one agent, so it is stored
+ * once — on the first project — and restored when that folder is opened again.
+ */
+export class LayoutController {
+  constructor(
+    private readonly view: LayoutTreeProvider,
+    private readonly grid: EditorGrid,
+    private readonly registry: AgentRegistry,
+    private readonly projects: ProjectWatcher,
+  ) {}
+
+  /** The layout in force, which is what the checkmark in the view follows. */
+  async apply(id: string): Promise<void> {
+    const running = this.registry.list();
+    const preset = resolveLayout(id, running.length);
+    if (!preset) return;
+
+    // Applies the split and distributes the terminals into it; a grid with
+    // every terminal stacked in one pane is not a grid.
+    await this.grid.arrange(
+      running.map((agent) => agent.terminal),
+      preset,
+    );
+    this.view.setCurrent(id);
+
+    // Recorded on the project that owns the config the user is most likely to
+    // be reading, since one window only ever has one split.
+    const root = this.projects.projects()[0]?.uri;
+    if (!root) return;
+    await updateConfig(root, (config) => {
+      config.layout = preset.id;
+    });
+    await this.projects.refresh();
+  }
+
+  /**
+   * Brings back the split a project was left in, on startup.
+   *
+   * Only a project gets its restored editors moved into the file pane; in any
+   * other folder the window should look exactly as it was left.
+   */
+  async restore(): Promise<void> {
+    const project = this.projects.projects().find((p) => p.config.layout);
+    const id = project?.config.layout ?? AUTO_LAYOUT;
+    this.view.setCurrent(id);
+
+    const preset = resolveLayout(id, project?.config.agents.length ?? 0);
+    if (preset) await this.grid.applyPreset(preset, this.projects.any);
+  }
+}
 
 /**
  * The splits as a visible list rather than a hidden command.

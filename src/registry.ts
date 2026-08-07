@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { setting } from './config.js';
 import { basename } from './paths.js';
 import type { AgentProfile, LaunchMode, RunningAgent } from './types.js';
 
@@ -51,9 +52,7 @@ export class AgentRegistry implements vscode.Disposable {
   }
 
   launch(profile: AgentProfile, mode: LaunchMode, target: LaunchTarget): RunningAgent {
-    const strategy = vscode.workspace
-      .getConfiguration('cliGrid')
-      .get<'shell' | 'exec'>('launchStrategy', 'shell');
+    const strategy = setting('launchStrategy');
 
     const folderName = basename(target.folder.path);
     const args = mode === 'resume' ? profile.args.resume : profile.args.new;

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { setting } from './config.js';
 import type { GitStatus } from './git.js';
 import { basename, dirnameOf, exists, join } from './paths.js';
 import type { AgentRegistry } from './registry.js';
@@ -78,10 +79,7 @@ export class FilesTreeProvider
    * than at each of the call sites — one of which would always get forgotten.
    */
   follow(uri: vscode.Uri): void {
-    const on = vscode.workspace
-      .getConfiguration('cliGrid')
-      .get<boolean>('revealOnFocus', true);
-    if (on) this.setScope(uri);
+    if (setting('revealOnFocus')) this.setScope(uri);
   }
 
   /** Points the tree at a folder — normally the focused agent's cwd. */
@@ -122,9 +120,7 @@ export class FilesTreeProvider
     const dir = element?.uri ?? this.scope;
     if (!dir) return [];
 
-    const showHidden = vscode.workspace
-      .getConfiguration('cliGrid')
-      .get<boolean>('showHiddenFiles', false);
+    const showHidden = setting('showHiddenFiles');
 
     let entries: [string, vscode.FileType][];
     try {

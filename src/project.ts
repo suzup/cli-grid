@@ -242,6 +242,42 @@ export class ProjectWatcher implements vscode.Disposable {
     void this.refresh();
   }
 
+  /**
+   * Turns an open folder into a project.
+   *
+   * Adding the first agent does this on its own, so this is for someone who
+   * wants the file in place before deciding what goes in it.
+   */
+  async init(): Promise<void> {
+    const root = await pickProjectFolder({
+      title: vscode.l10n.t('Which folder should become a CLI Grid project?'),
+      only: async (folder) => !(await hasConfig(folder.uri)),
+    });
+    if (!root) return;
+
+    // Every open folder was already one, so `pickProjectFolder` fell back to the
+    // full list rather than leaving the user with no answer.
+    if (await hasConfig(root)) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t('This folder is already a CLI Grid project.'),
+      );
+      await this.refresh();
+      return;
+    }
+
+    try {
+      await writeConfig(root, { agents: [] });
+    } catch (err) {
+      void vscode.window.showErrorMessage(
+        vscode.l10n.t('Could not write {0}: {1}', CONFIG_RELATIVE, String(err)),
+      );
+      return;
+    }
+
+    await this.refresh();
+    await vscode.commands.executeCommand('cliGrid.showAgents');
+  }
+
   async refresh(): Promise<void> {
     this.roots.clear();
     for (const folder of vscode.workspace.workspaceFolders ?? []) {

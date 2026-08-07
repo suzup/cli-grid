@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { setting } from './config.js';
 import { paneCount, toSpec } from './layout.js';
 import type { LayoutPreset } from './types.js';
 
@@ -175,10 +176,7 @@ export class EditorGrid implements vscode.Disposable {
    * dragging a tab into the grid available.
    */
   private syncLocks(): Promise<void> {
-    const enabled = vscode.workspace
-      .getConfiguration('cliGrid')
-      .get<boolean>('lockAgentPanes', true);
-
+    const enabled = setting('lockAgentPanes');
     return this.setLocks((group) => enabled && group.tabs.some(isAgentTab));
   }
 

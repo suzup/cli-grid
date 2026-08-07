@@ -12,7 +12,6 @@
   "cmd.refresh": "Refresh",
   "view.agents": "Agents",
   "welcome.noFolder": "Open a folder to get started.\nCLI Grid is configured per folder, like .vscode/settings.json.\n[Open Folder](command:workbench.action.files.openFolder)",
-  "welcome.folder": "No agents in this folder yet.\n[New Agent](command:cliGrid.newAgent)\nAdding one writes .vscode/cli-grid.json. Reopen this folder later and the grid comes back.",
   "config.defaultMode": "Whether the launcher starts a CLI fresh or resumes its previous conversation by default. Individual profiles and individual agents can override it. CLI Grid never manages conversation state itself; it only chooses which arguments to pass.",
   "config.defaultMode.new": "Start a fresh conversation",
   "config.defaultMode.resume": "Resume the previous conversation",

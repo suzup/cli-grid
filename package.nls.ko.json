@@ -12,7 +12,6 @@
   "cmd.refresh": "새로 고침",
   "view.agents": "에이전트",
   "welcome.noFolder": "폴더를 열면 시작됩니다.\nCLI Grid는 .vscode/settings.json처럼 폴더 단위로 설정됩니다.\n[폴더 열기](command:workbench.action.files.openFolder)",
-  "welcome.folder": "이 폴더에 아직 에이전트가 없습니다.\n[새 에이전트](command:cliGrid.newAgent)\n추가하면 .vscode/cli-grid.json이 생깁니다. 다음에 이 폴더를 열면 그리드가 그대로 돌아옵니다.",
   "config.defaultMode": "실행기가 CLI를 새로 시작할지, 이전 대화를 이어갈지의 기본값입니다. 프로파일별·에이전트별로 재정의할 수 있습니다. CLI Grid는 대화 상태를 직접 관리하지 않고 어떤 인자를 넘길지만 정합니다.",
   "config.defaultMode.new": "새 대화로 시작",
   "config.defaultMode.resume": "이전 대화 이어서",

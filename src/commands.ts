@@ -17,3 +17,17 @@ export function registerCommand(
 ): void {
   context.subscriptions.push(vscode.commands.registerCommand(id, handler));
 }
+
+/**
+ * Registers a whole table of them.
+ *
+ * Written as a table so that what the extension does stays legible as a list:
+ * a handler long enough to hide the shape of that list belongs on whichever
+ * class owns the state it works on.
+ */
+export function registerCommands(
+  context: vscode.ExtensionContext,
+  table: Record<string, CommandHandler>,
+): void {
+  for (const [id, handler] of Object.entries(table)) registerCommand(context, id, handler);
+}

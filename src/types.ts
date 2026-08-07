@@ -26,6 +26,18 @@ export interface AgentProfile {
   hidden?: boolean;
 }
 
+/** What `cliGrid.profiles` may set: any part of a profile, over a built-in one. */
+export interface ProfileOverride {
+  label?: string;
+  command?: string;
+  args?: Partial<ProfileArgs>;
+  defaultMode?: LaunchMode;
+  icon?: string;
+  color?: string;
+  env?: Record<string, string>;
+  hidden?: boolean;
+}
+
 export interface RunningAgent {
   id: string;
   profileId: string;

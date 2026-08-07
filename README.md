@@ -162,9 +162,13 @@ npm run watch     # esbuild in watch mode
 # then press F5 for an Extension Development Host
 ```
 
-`npm run typecheck` and `npm run lint` cover the rest; `npm run package`
-produces a `.vsix`. Changing `package.json` needs a full F5 restart rather than
-`Ctrl+R`, since the manifest is read once at startup.
+`npm run typecheck`, `npm run lint` and `npm test` cover the rest; `npm run
+package` produces a `.vsix`. Changing `package.json` needs a full F5 restart
+rather than `Ctrl+R`, since the manifest is read once at startup.
+
+The tests run in plain node — `src/test/vscode.ts` stands in for the module the
+extension host injects — so they cover layout maths, path handling, config
+parsing and profile merging, and nothing that needs a workbench.
 
 ## Known limitations
 
@@ -174,6 +178,10 @@ produces a `.vsix`. Changing `package.json` needs a full F5 restart rather than
   VS Code removed the `moveEditorToNthGroup` commands in 1.25.1. It is reliable
   but not instantaneous with many panes.
 - More agents than panes wrap into tabs, so the last panes hold several agents.
+- The Files view does not watch the filesystem, so a file an agent has just
+  created appears after a refresh rather than on its own. Watching an arbitrary
+  folder recursively is expensive on a large tree, and a cheap version of this
+  is worse than none.
 
 ## License
 
