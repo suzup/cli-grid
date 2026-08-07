@@ -53,5 +53,6 @@
   "cmd.copyRelativePath": "Copy Relative Path",
   "cmd.revealInOS": "Reveal in File Explorer",
   "cmd.revealInExplorer": "Reveal in VS Code's Explorer",
-  "cmd.openInTerminal": "Open in Integrated Terminal"
+  "cmd.openInTerminal": "Open in Integrated Terminal",
+  "command.editAgent": "Agent Settings..."
 }

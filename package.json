@@ -103,6 +103,12 @@
         "icon": "$(save)"
       },
       {
+        "command": "cliGrid.editAgent",
+        "title": "%command.editAgent%",
+        "category": "CLI Grid",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "cliGrid.removeAgent",
         "title": "%cmd.removeAgent%",
         "category": "CLI Grid",
@@ -467,6 +473,16 @@
           "command": "cliGrid.delete",
           "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
           "group": "7_modification@2"
+        },
+        {
+          "command": "cliGrid.editAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\./",
+          "group": "inline@9"
+        },
+        {
+          "command": "cliGrid.editAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\./",
+          "group": "7_modification@1"
         }
       ]
     },

@@ -68,5 +68,16 @@
   "There is no trash on this file system.": "이 파일 시스템에는 휴지통이 없습니다.",
   "You can restore it from the trash.": "휴지통에서 되돌릴 수 있습니다.",
   "the {0} selected files": "선택한 {0}개 항목",
-  "{0} already exists in this folder.": "이 폴더에 {0}이(가) 이미 있습니다."
+  "{0} already exists in this folder.": "이 폴더에 {0}이(가) 이미 있습니다.",
+  "Save this agent to the project before changing it.": "이 에이전트를 먼저 프로젝트에 저장한 뒤 변경하세요.",
+  "Rename": "이름 바꾸기",
+  "Shown instead of the folder name": "폴더 이름 대신 표시됩니다",
+  "Change CLI": "CLI 바꾸기",
+  "Change how it starts": "시작 방식 바꾸기",
+  "{0} — settings": "{0} — 설정",
+  "Name for this agent": "이 에이전트의 이름",
+  "Leave it empty to go back to the folder name": "비우면 폴더 이름으로 돌아갑니다",
+  "How should it start?": "어떻게 시작할까요?",
+  "There is already a {0} in that folder.": "그 폴더에는 이미 {0}이(가) 있습니다.",
+  "CLI": "CLI"
 }

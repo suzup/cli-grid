@@ -61,6 +61,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.createTreeView('cliGrid.agents', {
       treeDataProvider: tree,
       showCollapseAll: true,
+      // Dragging a row reorders the project file, which is also the order
+      // `startAll` hands out panes in.
+      canSelectMany: true,
+      dragAndDropController: tree,
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration(`${SECTION}.profiles`)) {
@@ -95,6 +99,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (root) await launcher.startAll(root, 'resume');
     },
 
+    'cliGrid.editAgent': (node?: AgentNode) => node && launcher.editAgent(node),
     'cliGrid.removeAgent': (node?: AgentNode) => node && launcher.removeAgent(node),
     'cliGrid.saveAgent': (node?: AgentNode) => node && launcher.saveAgent(node),
 

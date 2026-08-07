@@ -29,6 +29,8 @@ export interface AgentSpec {
   folder: string;
   cli: string;
   mode?: LaunchMode;
+  /** Shown instead of the folder name, for when that is not distinct enough. */
+  name?: string;
 }
 
 export interface ProjectConfig {
@@ -90,6 +92,7 @@ export async function readConfig(root: vscode.Uri): Promise<ProjectConfig | unde
           folder: a.folder?.trim() || '.',
           cli: a.cli,
           ...(a.mode ? { mode: a.mode } : {}),
+          ...(a.name?.trim() ? { name: a.name.trim() } : {}),
         })),
     };
   } catch (err) {
@@ -125,13 +128,72 @@ export async function updateConfig(
   await writeConfig(root, config);
 }
 
+/**
+ * What makes two entries the same agent: one CLI per folder.
+ *
+ * The launcher, the tree and the registry all lean on this, so a second Claude
+ * in the same folder is the same row rather than a duplicate nobody can tell
+ * apart.
+ */
+export function sameAgent(a: AgentSpec, b: AgentSpec): boolean {
+  return a.folder === b.folder && a.cli === b.cli;
+}
+
 export async function addAgentToConfig(
   root: vscode.Uri,
   spec: AgentSpec,
 ): Promise<void> {
   await updateConfig(root, (config) => {
-    const already = config.agents.some((a) => a.folder === spec.folder && a.cli === spec.cli);
-    if (!already) config.agents.push(spec);
+    if (!config.agents.some((a) => sameAgent(a, spec))) config.agents.push(spec);
+  });
+}
+
+/**
+ * Replaces one agent's entry, keeping its place in the order.
+ *
+ * Returns false when the change would collide with an agent already there —
+ * pointing two entries at the same CLI in the same folder would make them the
+ * same agent, and one of them would quietly win.
+ */
+export async function updateAgentInConfig(
+  root: vscode.Uri,
+  current: AgentSpec,
+  next: AgentSpec,
+): Promise<boolean> {
+  let ok = false;
+  await updateConfig(root, (config) => {
+    const at = config.agents.findIndex((a) => sameAgent(a, current));
+    if (at === -1) return;
+    if (config.agents.some((a, index) => index !== at && sameAgent(a, next))) return;
+
+    config.agents[at] = next;
+    ok = true;
+  });
+  return ok;
+}
+
+/**
+ * Moves agents so they sit just before `before`, or last when it is absent.
+ *
+ * The order in this file is the order of the view, and it is also the order
+ * `startAll` hands out panes in — so dragging a row is how you decide which
+ * pane an agent comes up in.
+ */
+export async function reorderAgents(
+  root: vscode.Uri,
+  moved: readonly AgentSpec[],
+  before: AgentSpec | undefined,
+): Promise<void> {
+  await updateConfig(root, (config) => {
+    const taken = config.agents.filter((a) => moved.some((m) => sameAgent(a, m)));
+    if (!taken.length) return;
+
+    const rest = config.agents.filter((a) => !moved.some((m) => sameAgent(a, m)));
+    // Located after the removal, so the index still means what it looks like.
+    const at = before ? rest.findIndex((a) => sameAgent(a, before)) : -1;
+
+    rest.splice(at === -1 ? rest.length : at, 0, ...taken);
+    config.agents = rest;
   });
 }
 

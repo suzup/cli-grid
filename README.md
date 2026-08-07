@@ -12,9 +12,9 @@ pane**.
 ┌ CLI GRID ───────────┬──────────────────┬──────────────────┐
 │ ▾ AGENTS       + ⟳  │ ✨ Claude · api   │ 🚀 Codex · api    │
 │  ▾ work    main ↑2  │                  │                  │
-│    ✨ Claude  running│                  │                  │
-│    🚀 Codex   running├──────────────────┼──────────────────┤
-│    ⭐ Gemini  stopped│ ⭐ Gemini · web   │                  │
+│    ✨ api      Claude│                  │                  │
+│    🚀 api      Codex ├──────────────────┼──────────────────┤
+│    ▷ web      Gemini │ ⭐ Gemini · web   │                  │
 │                     │                  │                  │
 │ ▾ FILES  api—main ↑2│                  │                  │
 │  ▾ src              │                  │                  │
@@ -38,6 +38,11 @@ up again tomorrow.
 - **One command per agent** — pick a folder, pick a CLI. The choice is written to
   the project, so it is there next time.
 - **Tabs that say where they are** — `Claude Code · api`, not `claude (2)`.
+- **Rows named after the folder they work in**, with the CLI as the description
+  — the question you have looking at the list is *which repository is this*.
+  Drag rows to reorder them, which also decides which pane each agent opens in,
+  and use the gear for that agent's own settings: a display name, a different
+  CLI, or how it starts.
 - **A Files view that follows the agent you are looking at.** Select an agent —
   or just click its terminal tab — and the tree switches to the folder that CLI
   is working in, with the branch in the header.
@@ -78,7 +83,7 @@ add agents. That writes `.vscode/cli-grid.json`:
   "agents": [
     { "folder": ".",   "cli": "claude" },
     { "folder": "api", "cli": "codex"  },
-    { "folder": "web", "cli": "gemini", "mode": "resume" }
+    { "folder": "web", "cli": "gemini", "mode": "resume", "name": "storefront" }
   ]
 }
 ```

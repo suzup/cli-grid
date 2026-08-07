@@ -16,11 +16,12 @@ import {
   hasConfig,
   pickProjectFolder,
   removeAgentFromConfig,
+  updateAgentInConfig,
   type AgentSpec,
   type ProjectWatcher,
 } from './project.js';
 import type { AgentRegistry } from './registry.js';
-import type { AgentNode } from './tree.js';
+import { agentLabel, type AgentNode } from './tree.js';
 import type { AgentProfile, LaunchMode } from './types.js';
 
 const RECENT_KEY = 'cliGrid.recentFolders';
@@ -164,6 +165,99 @@ export class Launcher {
         viewColumn: columnFor(index, preset),
       });
     }
+  }
+
+  /**
+   * Settings for one agent, written into that agent's entry in the project
+   * file. Nothing here is global — `cliGrid.profiles` is where a change meant
+   * for every Claude belongs.
+   *
+   * A running agent is left running: the terminal already has a conversation in
+   * it, and killing that to apply a rename is not a trade anyone would pick.
+   * The change takes effect the next time it starts.
+   */
+  async editAgent(node: AgentNode): Promise<void> {
+    if (node.adHoc) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t('Save this agent to the project before changing it.'),
+      );
+      return;
+    }
+
+    const action = await vscode.window.showQuickPick(
+      [
+        {
+          label: `$(edit) ${vscode.l10n.t('Rename')}`,
+          detail: vscode.l10n.t('Shown instead of the folder name'),
+          id: 'name' as const,
+        },
+        {
+          label: `$(terminal) ${vscode.l10n.t('Change CLI')}`,
+          detail: findProfile(node.spec.cli)?.label ?? node.spec.cli,
+          id: 'cli' as const,
+        },
+        {
+          label: `$(history) ${vscode.l10n.t('Change how it starts')}`,
+          detail:
+            effectiveMode(node.spec.cli, node.spec.mode) === 'resume'
+              ? vscode.l10n.t('resume')
+              : vscode.l10n.t('new'),
+          id: 'mode' as const,
+        },
+      ],
+      { title: vscode.l10n.t('{0} — settings', agentLabel(node)) },
+    );
+    if (!action) return;
+
+    const next: AgentSpec = { ...node.spec };
+
+    if (action.id === 'name') {
+      const chosen = await vscode.window.showInputBox({
+        title: vscode.l10n.t('Name for this agent'),
+        prompt: vscode.l10n.t('Leave it empty to go back to the folder name'),
+        value: node.spec.name ?? '',
+        placeHolder: basename(node.folder.path),
+      });
+      if (chosen === undefined) return;
+
+      const trimmed = chosen.trim();
+      if (trimmed) next.name = trimmed;
+      else delete next.name;
+    }
+
+    if (action.id === 'cli') {
+      const picked = await this.pickProfile(node.folder);
+      if (!picked) return;
+      next.cli = picked.profile.id;
+      if (picked.mode !== defaultMode(picked.profile)) next.mode = picked.mode;
+      else delete next.mode;
+    }
+
+    if (action.id === 'mode') {
+      const profile = findProfile(next.cli);
+      const picked = await vscode.window.showQuickPick(
+        [
+          { label: vscode.l10n.t('new'), mode: 'new' as LaunchMode },
+          ...(profile && supportsMode(profile, 'resume')
+            ? [{ label: vscode.l10n.t('resume'), mode: 'resume' as LaunchMode }]
+            : []),
+        ],
+        { title: vscode.l10n.t('How should it start?') },
+      );
+      if (!picked) return;
+
+      if (profile && picked.mode === defaultMode(profile)) delete next.mode;
+      else next.mode = picked.mode;
+    }
+
+    const written = await updateAgentInConfig(node.root, node.spec, next);
+    if (!written) {
+      void vscode.window.showWarningMessage(
+        vscode.l10n.t('There is already a {0} in that folder.', findProfile(next.cli)?.label ?? next.cli),
+      );
+      return;
+    }
+    await this.projects.refresh();
   }
 
   async removeAgent(node: AgentNode): Promise<void> {

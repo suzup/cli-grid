@@ -14,6 +14,8 @@ First release.
 - **Built-in CLI profiles** for Claude Code, Codex and Gemini, with a
   new-vs-resume choice per launch, per profile or per agent. Arguments are
   passed through untouched, and `cliGrid.profiles` adds or hides entries.
+- **Agent rows named after their folder** — the last segment of it, with the CLI
+  as the description and the whole path in the hover.
 - **Files view scoped to the focused agent** — selecting an agent, or clicking
   its terminal tab, switches the tree to the folder that CLI runs in. File icons
   and git colours come from the icon theme and the built-in Git extension.
@@ -42,6 +44,13 @@ First release.
   so the file-operation participants run — imports get updated — and the change
   is undoable. Delete honours `explorer.confirmDelete` and asks once for a whole
   selection rather than once per file.
+- **Drag to reorder agents** in the Agents view. The order is the order in the
+  project file, which is also the order `startAll` hands out panes in, so
+  dragging a row is how you decide which pane an agent comes up in.
+- **Per-agent settings** (the gear on each row): a display name, which CLI it
+  runs, and whether it starts new or resumed. Each is written to that agent's
+  own entry in the project file — `cliGrid.profiles` remains the place for a
+  change meant for every agent of one kind.
 - **Remote support** — declared as a workspace extension, so under Remote-WSL,
   Remote-SSH or a dev container the folder picker, CLI detection and terminals
   all run on the remote host.

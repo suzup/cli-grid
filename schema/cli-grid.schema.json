@@ -44,6 +44,10 @@
               "resume"
             ],
             "description": "Overrides cliGrid.defaultMode for this agent."
+          },
+          "name": {
+            "type": "string",
+            "description": "Shown in the Agents view instead of the folder name."
           }
         }
       }

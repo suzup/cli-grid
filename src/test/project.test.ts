@@ -15,6 +15,8 @@ import {
   openableConfigUri,
   readConfig,
   removeAgentFromConfig,
+  reorderAgents,
+  updateAgentInConfig,
   writeConfig,
 } from '../project.js';
 
@@ -148,6 +150,11 @@ describe('writing', () => {
     assert.equal((await readConfig(root))?.agents.length, 1);
   });
 
+  it('keeps a name given to an agent', async () => {
+    await writeConfig(root, { agents: [{ cli: 'claude', folder: 'api', name: 'billing' }] });
+    assert.equal((await readConfig(root))?.agents[0]?.name, 'billing');
+  });
+
   it('tells two CLIs in the same folder apart', async () => {
     await addAgentToConfig(root, { cli: 'claude', folder: 'api' });
     await addAgentToConfig(root, { cli: 'codex', folder: 'api' });
@@ -155,5 +162,92 @@ describe('writing', () => {
 
     await removeAgentFromConfig(root, { cli: 'claude', folder: 'api' });
     assert.deepEqual((await readConfig(root))?.agents, [{ cli: 'codex', folder: 'api' }]);
+  });
+});
+
+describe('reordering', () => {
+  const three = [
+    { cli: 'claude', folder: 'a' },
+    { cli: 'codex', folder: 'b' },
+    { cli: 'gemini', folder: 'c' },
+  ];
+  const order = async () => (await readConfig(root))!.agents.map((a) => a.folder).join('');
+
+  it('moves an agent above the one it was dropped on', async () => {
+    await writeConfig(root, { agents: [...three] });
+    await reorderAgents(root, [three[2]!], three[0]!);
+    assert.equal(await order(), 'cab');
+  });
+
+  it('moves it to the end when nothing was named', async () => {
+    await writeConfig(root, { agents: [...three] });
+    await reorderAgents(root, [three[0]!], undefined);
+    assert.equal(await order(), 'bca');
+  });
+
+  it('keeps a multiple selection together, in its own order', async () => {
+    await writeConfig(root, { agents: [...three] });
+    await reorderAgents(root, [three[0]!, three[2]!], three[1]!);
+    assert.equal(await order(), 'acb');
+  });
+
+  // The target's index has to be found after the dragged rows are taken out,
+  // or moving something downwards lands one place short.
+  it('moves an agent downwards to the right place', async () => {
+    await writeConfig(root, { agents: [...three] });
+    await reorderAgents(root, [three[0]!], three[2]!);
+    assert.equal(await order(), 'bac');
+  });
+
+  it('ignores an agent that is not in this project', async () => {
+    await writeConfig(root, { agents: [...three] });
+    await reorderAgents(root, [{ cli: 'claude', folder: 'elsewhere' }], three[0]!);
+    assert.equal(await order(), 'abc');
+  });
+});
+
+describe('editing one agent', () => {
+  it('changes it in place, keeping its position', async () => {
+    await writeConfig(root, {
+      agents: [
+        { cli: 'claude', folder: 'a' },
+        { cli: 'codex', folder: 'b' },
+      ],
+    });
+
+    const ok = await updateAgentInConfig(
+      root,
+      { cli: 'claude', folder: 'a' },
+      { cli: 'gemini', folder: 'a', name: 'renamed' },
+    );
+
+    assert.equal(ok, true);
+    assert.deepEqual((await readConfig(root))?.agents, [
+      { cli: 'gemini', folder: 'a', name: 'renamed' },
+      { cli: 'codex', folder: 'b' },
+    ]);
+  });
+
+  // Two entries with the same folder and CLI are the same agent, so one would
+  // shadow the other with no way to tell them apart.
+  it('refuses a change that collides with another agent', async () => {
+    const agents = [
+      { cli: 'claude', folder: 'a' },
+      { cli: 'codex', folder: 'a' },
+    ];
+    await writeConfig(root, { agents: [...agents] });
+
+    const ok = await updateAgentInConfig(root, agents[0]!, { cli: 'codex', folder: 'a' });
+
+    assert.equal(ok, false);
+    assert.deepEqual((await readConfig(root))?.agents, agents);
+  });
+
+  it('reports nothing changed when the agent is gone', async () => {
+    await writeConfig(root, { agents: [] });
+    assert.equal(
+      await updateAgentInConfig(root, { cli: 'claude', folder: 'a' }, { cli: 'codex', folder: 'a' }),
+      false,
+    );
   });
 });
