@@ -35,6 +35,19 @@ export function agentLabel(node: AgentNode): string {
 }
 
 /**
+ * The name to store for what someone typed, or nothing at all.
+ *
+ * The rename box opens on the current label, so an agent with no name of its
+ * own opens on its folder name. Accepting that unchanged is not choosing a
+ * name — it is leaving things as they were — and writing it down would put a
+ * line in the project file that changes nothing and then goes stale.
+ */
+export function nameFor(input: string, folder: string): string | undefined {
+  const trimmed = input.trim();
+  return trimmed && trimmed !== folder ? trimmed : undefined;
+}
+
+/**
  * The workbench's own mime type for this tree, which is what makes a drag that
  * starts and ends inside it carry the nodes themselves rather than text.
  * It is the view id, lowercased.

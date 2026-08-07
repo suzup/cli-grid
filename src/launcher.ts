@@ -21,7 +21,7 @@ import {
   type ProjectWatcher,
 } from './project.js';
 import type { AgentRegistry } from './registry.js';
-import { agentLabel, type AgentNode } from './tree.js';
+import { agentLabel, nameFor, type AgentNode } from './tree.js';
 import type { AgentProfile, LaunchMode } from './types.js';
 
 const RECENT_KEY = 'cliGrid.recentFolders';
@@ -212,17 +212,20 @@ export class Launcher {
     const next: AgentSpec = { ...node.spec };
 
     if (action.id === 'name') {
+      const folder = basename(node.folder.path);
       const chosen = await vscode.window.showInputBox({
         title: vscode.l10n.t('Name for this agent'),
         prompt: vscode.l10n.t('Leave it empty to go back to the folder name'),
-        value: node.spec.name ?? '',
-        placeHolder: basename(node.folder.path),
+        // What the row says now, so this edits a name rather than asking for
+        // one against an empty box. An agent with no name of its own is shown
+        // by its folder, and that is the thing to edit.
+        value: agentLabel(node),
+        placeHolder: folder,
       });
       if (chosen === undefined) return;
 
-      const trimmed = chosen.trim();
-      if (trimmed) next.name = trimmed;
-      else delete next.name;
+      next.name = nameFor(chosen, folder);
+      if (!next.name) delete next.name;
     }
 
     if (action.id === 'cli') {

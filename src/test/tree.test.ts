@@ -9,7 +9,7 @@ import { GitStatus } from '../git.js';
 import { clearProfileCache } from '../profiles.js';
 import { ProjectWatcher, type AgentSpec } from '../project.js';
 import { AgentRegistry } from '../registry.js';
-import { AgentNode, AgentsTreeProvider, agentLabel } from '../tree.js';
+import { AgentNode, AgentsTreeProvider, agentLabel, nameFor } from '../tree.js';
 
 const root = URI.file('/home/dev/work');
 
@@ -72,5 +72,27 @@ describe('the row itself', () => {
 
     assert.ok(tooltip.includes('/home/dev/work/services/api'), tooltip);
     assert.ok(tooltip.includes('Claude Code'), tooltip);
+  });
+});
+
+describe('what a typed name becomes', () => {
+  it('is kept when it differs from the folder', () => {
+    assert.equal(nameFor('billing', 'api'), 'billing');
+  });
+
+  // The box opens on the current label, so an agent with no name of its own
+  // opens on its folder name. Pressing Enter on that is not choosing a name.
+  it('is nothing when it is just the folder name back again', () => {
+    assert.equal(nameFor('api', 'api'), undefined);
+  });
+
+  it('is nothing when it is cleared', () => {
+    assert.equal(nameFor('', 'api'), undefined);
+    assert.equal(nameFor('   ', 'api'), undefined);
+  });
+
+  it('is trimmed', () => {
+    assert.equal(nameFor('  billing  ', 'api'), 'billing');
+    assert.equal(nameFor('  api  ', 'api'), undefined);
   });
 });
