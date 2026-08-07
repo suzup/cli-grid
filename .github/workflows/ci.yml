@@ -1,0 +1,29 @@
+name: CI
+
+# Every push and every pull request, so a contributor sees the same checks the
+# release runs before a tag is ever cut.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      # Packaging is where a missing file or a bad manifest shows up, and it
+      # costs seconds — worth catching here rather than at release time.
+      - run: npx vsce package --no-dependencies -o cli-grid.vsix

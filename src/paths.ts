@@ -39,14 +39,28 @@ export function relativeTo(root: vscode.Uri, target: vscode.Uri): string {
   return down.join('/');
 }
 
-/** Resolves a config-relative folder reference back to a Uri. */
+/**
+ * Resolves a config-relative folder reference back to a Uri.
+ *
+ * The inverse of `relativeTo`, so it has to accept the absolute form that
+ * function falls back to — including a Windows path, which is what `fsPath`
+ * gives there.
+ */
 export function resolveFolder(root: vscode.Uri, reference: string): vscode.Uri {
-  const trimmed = reference.trim();
+  const trimmed = reference.trim().replace(/\\/g, '/');
   if (!trimmed || trimmed === '.') return root;
-  if (trimmed.startsWith('/') || /^[A-Za-z]:[\\/]/.test(trimmed)) {
-    return root.with({ path: trimmed.replace(/\\/g, '/') });
-  }
-  return join(root, ...trimmed.replace(/\\/g, '/').split('/').filter(Boolean));
+
+  // A drive letter can only mean a local file, and `Uri.file` is what puts the
+  // leading slash on the path. `root.with({ path: 'C:/…' })` would produce a
+  // uri whose path does not start with one, which is not a valid file uri and
+  // whose `fsPath` comes back mangled.
+  if (/^[A-Za-z]:\//.test(trimmed)) return vscode.Uri.file(trimmed);
+
+  // Absolute, but on the same file system as the project: keep the root's
+  // scheme and authority so folders on a remote still resolve.
+  if (trimmed.startsWith('/')) return root.with({ path: trimmed });
+
+  return join(root, ...trimmed.split('/').filter(Boolean));
 }
 
 export async function exists(uri: vscode.Uri): Promise<boolean> {

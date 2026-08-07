@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
-import { paneCount } from './layout.js';
+import { paneCount, toSpec } from './layout.js';
 import type { LayoutPreset } from './types.js';
-
-/** Share of the editor area the file pane takes when it is up. */
-const FILE_PANE_SIZE = 0.35;
 
 /** `workbench.action.focus*EditorGroup` only goes this far. */
 const ORDINALS = [
@@ -16,11 +13,6 @@ const ORDINALS = [
   'Seventh',
   'Eighth',
 ];
-
-interface GroupSpec {
-  groups?: GroupSpec[];
-  size?: number;
-}
 
 /**
  * The editor area as this extension arranges it: a grid of agent panes, and —
@@ -198,8 +190,16 @@ export class EditorGrid implements vscode.Disposable {
     return this.setLocks(() => false);
   }
 
+  /**
+   * Locking is best-effort, and a failed pass must not poison the queue: the
+   * chain is what every later pass builds on, and `unlockAll` runs immediately
+   * before each launch, so a rejection left in it would stop agents starting for
+   * the rest of the session.
+   */
   private setLocks(wanted: (group: vscode.TabGroup) => boolean): Promise<void> {
-    this.pending = this.pending.then(() => this.doSetLocks(wanted));
+    this.pending = this.pending
+      .then(() => this.doSetLocks(wanted))
+      .catch((err) => console.error('CLI Grid: could not lock the agent panes', err));
     return this.pending;
   }
 
@@ -221,33 +221,6 @@ export class EditorGrid implements vscode.Disposable {
   dispose(): void {
     for (const d of this.disposables) d.dispose();
   }
-}
-
-/**
- * `vscode.setEditorLayout` takes nested groups, and each level splits the
- * opposite way to the one above it. Orientation 0 splits with a horizontal
- * divider, so at the top level it means rows.
- */
-function toSpec(preset: LayoutPreset, filePane: boolean): { orientation: number; groups: GroupSpec[] } {
-  if (!filePane) return { orientation: 0, groups: rowsOf(preset) };
-
-  // One level up: columns, the grid in the first and the files in the second.
-  // The grid's own rows and columns then fall out the same way as above.
-  return {
-    orientation: 1,
-    groups: [
-      { size: 1 - FILE_PANE_SIZE, groups: rowsOf(preset) },
-      { size: FILE_PANE_SIZE },
-    ],
-  };
-}
-
-function rowsOf(preset: LayoutPreset): GroupSpec[] {
-  const rowSize = 1 / preset.rows.length;
-  return preset.rows.map((columns) => ({
-    size: rowSize,
-    groups: Array.from({ length: columns }, () => ({ size: 1 / columns })),
-  }));
 }
 
 function isAgentTab(tab: vscode.Tab): boolean {

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { registerCommand, type CommandHandler } from './commands.js';
 import { FileNode, contains, freeName, type FilesTreeProvider } from './files.js';
 import { basename, dirnameOf, exists, join } from './paths.js';
 
@@ -34,15 +35,12 @@ export function registerFileCommands(
     return [...view.selection];
   };
 
+  /** A view title button passes something that is not a row, hence the guard. */
   const folderOf = (node: FileNode | undefined): vscode.Uri | undefined =>
-    node instanceof FileNode
-      ? node.isDir
-        ? node.uri
-        : dirnameOf(node.uri)
-      : files.currentScope();
+    node instanceof FileNode ? node.folder : files.currentScope();
 
-  const register = (id: string, handler: (...args: never[]) => unknown) =>
-    context.subscriptions.push(vscode.commands.registerCommand(id, handler));
+  const register = (id: string, handler: CommandHandler) =>
+    registerCommand(context, id, handler);
 
   /** Forwards to a workbench command that resolves its own multi-select. */
   const forward = (id: string, command: string) =>
@@ -124,7 +122,7 @@ export function registerFileCommands(
     for (const source of clipboard.uris) {
       const name = basename(source.path);
       if (contains(source, dir)) {
-        failures.push(vscode.l10n.t('{0} contains the folder you dropped it on', name));
+        failures.push(vscode.l10n.t('{0} contains the folder you are pasting into', name));
         continue;
       }
 

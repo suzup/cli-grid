@@ -86,6 +86,11 @@ export function readProfiles(): AgentProfile[] {
   return [...merged.values()].filter((p) => !p.hidden);
 }
 
+/** A profile with `resume` args is the only kind that can offer resume mode. */
+export function supportsMode(profile: AgentProfile, mode: LaunchMode): boolean {
+  return mode === 'new' || profile.args.resume.length > 0;
+}
+
 export function findProfile(id: string): AgentProfile | undefined {
   return readProfiles().find((p) => p.id === id);
 }
@@ -97,11 +102,20 @@ export function defaultMode(profile: AgentProfile): LaunchMode {
   return profile.defaultMode ?? global;
 }
 
-/** The mode an agent will actually start in, once every default is applied. */
-export function effectiveMode(profileId: string, declared?: LaunchMode): LaunchMode {
+/**
+ * The mode an agent will actually start in, once every default is applied.
+ *
+ * The one place that rule lives: a one-off override or what the project file
+ * says, then the profile's own default, then the global setting. Callers that
+ * already hold the profile pass it, so the tree does not look it up per row.
+ */
+export function effectiveMode(
+  profile: AgentProfile | string | undefined,
+  declared?: LaunchMode,
+): LaunchMode {
   if (declared) return declared;
-  const profile = findProfile(profileId);
-  return profile ? defaultMode(profile) : 'new';
+  const resolved = typeof profile === 'string' ? findProfile(profile) : profile;
+  return resolved ? defaultMode(resolved) : 'new';
 }
 
 /* ---------------------------- availability ---------------------------- */

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { GitStatus } from './git.js';
-import { basename, resolveFolder } from './paths.js';
+import { resolveFolder } from './paths.js';
 import { effectiveMode, findProfile } from './profiles.js';
 import type { AgentSpec, ProjectWatcher } from './project.js';
 import type { AgentRegistry } from './registry.js';
@@ -165,8 +165,4 @@ export class AgentsTreeProvider implements vscode.TreeDataProvider<Node>, vscode
     this.changeEmitter.dispose();
     for (const d of this.disposables) d.dispose();
   }
-}
-
-export function folderLabel(root: vscode.Uri, reference: string): string {
-  return reference === '.' ? basename(root.path) : reference;
 }

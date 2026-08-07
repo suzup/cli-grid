@@ -17,16 +17,25 @@ full F5 restart, because the manifest is only read at startup.
 ```bash
 npm run typecheck
 npm run lint
+npm test
 npm run package    # produces a .vsix
 ```
 
-CI runs the first two on every release tag.
+CI runs all four on every push and pull request.
+
+The tests run in plain node, not in a workbench: `src/test/vscode.ts` stands in
+for the `vscode` module, so anything that reaches the real API is out of scope
+by construction. That is the point — it keeps the logic worth testing (layout
+maths, path handling) in modules that do not need one. Put new logic of that
+kind in `layout.ts` or `paths.ts` and it is testable for free.
 
 ## Layout of the source
 
 | File | |
 | --- | --- |
 | `extension.ts` | activation and command wiring |
+| `grid.ts` | the editor area: agent panes, the file pane beside them, pane locks |
+| `fileops.ts` | the Files view's context menu — Explorer parity |
 | `project.ts` | reads and writes `.vscode/cli-grid.json`, watches for changes |
 | `launcher.ts` | the folder → CLI → terminal flow |
 | `registry.ts` | which terminal is which agent |

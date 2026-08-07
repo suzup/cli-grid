@@ -26,11 +26,6 @@ export interface AgentProfile {
   hidden?: boolean;
 }
 
-/** A profile with `resume` args is the only kind that can offer resume mode. */
-export function supportsMode(profile: AgentProfile, mode: LaunchMode): boolean {
-  return mode === 'new' || profile.args.resume.length > 0;
-}
-
 export interface RunningAgent {
   id: string;
   profileId: string;
@@ -53,13 +48,3 @@ export interface LayoutPreset {
   /** Column count per row: [2, 2] is a 2x2 grid. */
   rows: number[];
 }
-
-export const LAYOUT_PRESETS: LayoutPreset[] = [
-  { id: 'single', label: '1', detail: 'Single pane', rows: [1] },
-  { id: 'grid-2x1', label: '2 × 1', detail: 'Two columns', rows: [2] },
-  { id: 'grid-1x2', label: '1 × 2', detail: 'Two rows', rows: [1, 1] },
-  { id: 'grid-3x1', label: '3 × 1', detail: 'Three columns', rows: [3] },
-  { id: 'grid-2x2', label: '2 × 2', detail: 'Four panes', rows: [2, 2] },
-  { id: 'grid-3x2', label: '3 × 2', detail: 'Six panes', rows: [3, 3] },
-  { id: 'grid-4x2', label: '4 × 2', detail: 'Eight panes', rows: [4, 4] },
-];

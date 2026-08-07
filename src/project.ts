@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { basename, exists, join } from './paths.js';
+import { exists, join } from './paths.js';
 import type { LaunchMode } from './types.js';
 
 /**
@@ -101,13 +101,12 @@ export async function readConfig(root: vscode.Uri): Promise<ProjectConfig | unde
 }
 
 export async function writeConfig(root: vscode.Uri, config: ProjectConfig): Promise<void> {
+  // No `$schema` key: `contributes.jsonValidation` already binds the schema to
+  // this filename, so editors offer completion without it being written in.
   const body = {
-    // Points editors at the settings this file understands.
-    $schema: undefined,
     ...(config.layout ? { layout: config.layout } : {}),
     agents: config.agents,
   };
-  delete (body as Record<string, unknown>).$schema;
 
   await vscode.workspace.fs.createDirectory(join(root, CONFIG_DIR));
   await vscode.workspace.fs.writeFile(
@@ -147,24 +146,69 @@ export async function removeAgentFromConfig(
   });
 }
 
-/**
- * Immediate subdirectories worth offering as agent targets.
- *
- * Opening a parent directory full of repositories is the common shape, so the
- * launcher should not make the user browse for them one at a time.
- */
-export async function candidateFolders(root: vscode.Uri): Promise<vscode.Uri[]> {
-  const skip = new Set(['node_modules', '.git', 'dist', 'build', 'out', 'target', '__pycache__']);
+/* --------------------------- choosing a folder --------------------------- */
 
-  try {
-    const entries = await vscode.workspace.fs.readDirectory(root);
-    return entries
-      .filter(([name, type]) => type === vscode.FileType.Directory && !skip.has(name) && !name.startsWith('.'))
-      .map(([name]) => join(root, name))
-      .sort((a, b) => basename(a.path).localeCompare(basename(b.path)));
-  } catch {
-    return [];
+/**
+ * Nothing to work in, so offer the one thing that helps.
+ *
+ * Every entry point that needs a folder hits this, and every one of them then
+ * has nothing left to do: opening a folder reloads the window.
+ */
+export async function promptOpenFolder(): Promise<void> {
+  const open = vscode.l10n.t('Open Folder...');
+  const answer = await vscode.window.showInformationMessage(
+    vscode.l10n.t('Open the folder you want to work in first.'),
+    open,
+  );
+  if (answer === open) {
+    await vscode.commands.executeCommand('workbench.action.files.openFolder');
   }
+}
+
+/**
+ * Which open folder a command should act on.
+ *
+ * One folder is the common case and is never worth a prompt. `only` narrows the
+ * list — setting up a project asks about folders that are not one yet — and if
+ * nothing is left the full list is offered, so the caller gets a folder to
+ * report about rather than silence.
+ */
+export async function pickProjectFolder(options: {
+  title: string;
+  placeHolder?: string;
+  only?: (folder: vscode.WorkspaceFolder) => Promise<boolean>;
+}): Promise<vscode.Uri | undefined> {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  if (folders.length === 0) {
+    await promptOpenFolder();
+    return undefined;
+  }
+
+  let candidates = folders;
+  if (options.only) {
+    const kept: vscode.WorkspaceFolder[] = [];
+    for (const folder of folders) {
+      if (await options.only(folder)) kept.push(folder);
+    }
+    if (kept.length) candidates = kept;
+  }
+
+  const only = candidates[0];
+  if (candidates.length === 1 && only) return only.uri;
+
+  const picked = await vscode.window.showQuickPick(
+    candidates.map((f) => ({
+      label: `$(root-folder) ${f.name}`,
+      description: f.uri.fsPath,
+      uri: f.uri,
+    })),
+    {
+      title: options.title,
+      ...(options.placeHolder ? { placeHolder: options.placeHolder } : {}),
+      matchOnDescription: true,
+    },
+  );
+  return picked?.uri;
 }
 
 /**

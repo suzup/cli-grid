@@ -26,6 +26,7 @@ jobs:
         run: |
           npm run typecheck
           npm run lint
+          npm test
 
       - name: Package
         run: npx vsce package --no-dependencies -o cli-grid.vsix

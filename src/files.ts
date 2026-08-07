@@ -12,6 +12,16 @@ export class FileNode {
     readonly name: string,
     readonly isDir: boolean,
   ) {}
+
+  /**
+   * The folder this row stands for: itself, or the one holding it.
+   *
+   * Every operation that puts something somewhere — new file, paste, drop —
+   * asks the same question of whatever row it was invoked on.
+   */
+  get folder(): vscode.Uri {
+    return this.isDir ? this.uri : dirnameOf(this.uri);
+  }
 }
 
 /**
@@ -54,10 +64,24 @@ export class FilesTreeProvider
       // by clicking the terminal tab itself.
       vscode.window.onDidChangeActiveTerminal((terminal) => {
         const agent = terminal ? registry.byTerminal(terminal) : undefined;
-        if (agent) this.setScope(agent.folder);
+        if (agent) this.follow(agent.folder);
       }),
     );
     this.reset();
+  }
+
+  /**
+   * Follows an agent that has just been selected, started or focused.
+   *
+   * Every path that reacts to "the user is now looking at this agent" comes
+   * through here, so `cliGrid.revealOnFocus` is honoured in one place rather
+   * than at each of the call sites — one of which would always get forgotten.
+   */
+  follow(uri: vscode.Uri): void {
+    const on = vscode.workspace
+      .getConfiguration('cliGrid')
+      .get<boolean>('revealOnFocus', true);
+    if (on) this.setScope(uri);
   }
 
   /** Points the tree at a folder — normally the focused agent's cwd. */
@@ -173,7 +197,7 @@ export class FilesTreeProvider
     transfer: vscode.DataTransfer,
     token: vscode.CancellationToken,
   ): Promise<void> {
-    const into = target ? (target.isDir ? target.uri : dirnameOf(target.uri)) : this.scope;
+    const into = target ? target.folder : this.scope;
     if (!into) return;
 
     const failures: string[] = [];

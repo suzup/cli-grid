@@ -11,3 +11,4 @@ eslint.config.mjs
 .github/**
 CONTRIBUTING.md
 .editorconfig
+tsconfig.test.json

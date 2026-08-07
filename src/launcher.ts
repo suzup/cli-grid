@@ -2,18 +2,26 @@ import * as vscode from 'vscode';
 import type { EditorGrid } from './grid.js';
 import { columnFor, resolveLayout } from './layout.js';
 import { basename, dirnameOf, relativeTo, resolveFolder } from './paths.js';
-import { defaultMode, findProfile, isAvailable, readProfiles } from './profiles.js';
+import {
+  defaultMode,
+  effectiveMode,
+  findProfile,
+  isAvailable,
+  readProfiles,
+  supportsMode,
+} from './profiles.js';
 import {
   CONFIG_RELATIVE,
   addAgentToConfig,
   hasConfig,
+  pickProjectFolder,
   removeAgentFromConfig,
   type AgentSpec,
   type ProjectWatcher,
 } from './project.js';
 import type { AgentRegistry } from './registry.js';
 import type { AgentNode } from './tree.js';
-import { supportsMode, type AgentProfile, type LaunchMode } from './types.js';
+import type { AgentProfile, LaunchMode } from './types.js';
 
 const RECENT_KEY = 'cliGrid.recentFolders';
 const RECENT_LIMIT = 10;
@@ -121,7 +129,7 @@ export class Launcher {
     await this.grid.unlockAll();
     const agent = this.registry.launch(
       profile,
-      modeOverride ?? node.spec.mode ?? defaultMode(profile),
+      effectiveMode(profile, modeOverride ?? node.spec.mode),
       {
         root: node.root,
         folderRef: node.spec.folder,
@@ -149,7 +157,7 @@ export class Launcher {
       if (this.registry.find(root, spec.folder, spec.cli)) continue;
       const profile = findProfile(spec.cli);
       if (!profile) continue;
-      this.registry.launch(profile, modeOverride ?? spec.mode ?? defaultMode(profile), {
+      this.registry.launch(profile, effectiveMode(profile, modeOverride ?? spec.mode), {
         root,
         folderRef: spec.folder,
         folder: resolveFolder(root, spec.folder),
@@ -173,37 +181,11 @@ export class Launcher {
 
   /* ------------------------------ project step ----------------------------- */
 
-  private async pickProject(): Promise<vscode.Uri | undefined> {
-    const folders = vscode.workspace.workspaceFolders ?? [];
-
-    if (folders.length === 0) {
-      const open = vscode.l10n.t('Open Folder...');
-      const answer = await vscode.window.showInformationMessage(
-        vscode.l10n.t('Open the folder you want to work in first.'),
-        open,
-      );
-      if (answer === open) {
-        await vscode.commands.executeCommand('workbench.action.files.openFolder');
-      }
-      return undefined;
-    }
-
-    const only = folders[0];
-    if (folders.length === 1 && only) return only.uri;
-
-    const picked = await vscode.window.showQuickPick(
-      folders.map((f) => ({
-        label: `$(root-folder) ${f.name}`,
-        description: f.uri.fsPath,
-        uri: f.uri,
-      })),
-      {
-        title: vscode.l10n.t('CLI Grid — which project?'),
-        placeHolder: vscode.l10n.t('This window has more than one folder open'),
-        matchOnDescription: true,
-      },
-    );
-    return picked?.uri;
+  private pickProject(): Promise<vscode.Uri | undefined> {
+    return pickProjectFolder({
+      title: vscode.l10n.t('CLI Grid — which project?'),
+      placeHolder: vscode.l10n.t('This window has more than one folder open'),
+    });
   }
 
   /* ------------------------------ folder step ------------------------------ */
@@ -217,7 +199,7 @@ export class Launcher {
    */
   private async pickTargetFolder(root: vscode.Uri): Promise<vscode.Uri | undefined> {
     const previous = this.recentFolders()[0];
-    const startAt = parentOf(previous ?? root);
+    const startAt = dirnameOf(previous ?? root);
 
     const chosen = await vscode.window.showOpenDialog({
       canSelectFolders: true,
@@ -338,10 +320,5 @@ export class Launcher {
       });
     });
   }
-}
-
-/** Where the folder dialog should open: one level above the last choice. */
-function parentOf(uri: vscode.Uri): vscode.Uri {
-  return dirnameOf(uri);
 }
 

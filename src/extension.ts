@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { registerCommand, type CommandHandler } from './commands.js';
 import { FilesTreeProvider } from './files.js';
 import { GitStatus } from './git.js';
 import { registerFileCommands } from './fileops.js';
@@ -11,6 +12,7 @@ import {
   ProjectWatcher,
   hasConfig,
   openableConfigUri,
+  pickProjectFolder,
   updateConfig,
   writeConfig,
 } from './project.js';
@@ -74,41 +76,16 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
-  const register = (id: string, handler: (...args: never[]) => unknown) =>
-    context.subscriptions.push(vscode.commands.registerCommand(id, handler));
+  const register = (id: string, handler: CommandHandler) =>
+    registerCommand(context, id, handler);
 
   register('cliGrid.initProject', async () => {
-    const folders = vscode.workspace.workspaceFolders ?? [];
-    const first = folders[0];
-    if (!first) {
-      const open = vscode.l10n.t('Open Folder...');
-      const answer = await vscode.window.showInformationMessage(
-        vscode.l10n.t('Open the folder you want to work in first.'),
-        open,
-      );
-      if (answer === open) await vscode.commands.executeCommand('workbench.action.files.openFolder');
-      return;
-    }
-
-    // With several folders open, set up the one that is not a project yet.
-    let root = first.uri;
-    if (folders.length > 1) {
-      const candidates: vscode.WorkspaceFolder[] = [];
-      for (const folder of folders) {
-        if (!(await hasConfig(folder.uri))) candidates.push(folder);
-      }
-      const target = candidates[0] ?? first;
-      if (candidates.length > 1) {
-        const picked = await vscode.window.showQuickPick(
-          candidates.map((f) => ({ label: `$(root-folder) ${f.name}`, description: f.uri.fsPath, uri: f.uri })),
-          { title: vscode.l10n.t('Which folder should become a CLI Grid project?') },
-        );
-        if (!picked) return;
-        root = picked.uri;
-      } else {
-        root = target.uri;
-      }
-    }
+    // With several folders open, set up one that is not a project yet.
+    const root = await pickProjectFolder({
+      title: vscode.l10n.t('Which folder should become a CLI Grid project?'),
+      only: async (folder) => !(await hasConfig(folder.uri)),
+    });
+    if (!root) return;
 
     if (await hasConfig(root)) {
       void vscode.window.showInformationMessage(
@@ -137,7 +114,7 @@ export function activate(context: vscode.ExtensionContext): void {
   register('cliGrid.startAgent', async (node?: AgentNode) => {
     if (!node) return;
     await launcher.start(node);
-    files.setScope(node.folder);
+    files.follow(node.folder);
   });
 
   register('cliGrid.startAll', async (node?: ProjectNode) => {
@@ -155,13 +132,13 @@ export function activate(context: vscode.ExtensionContext): void {
   register('cliGrid.startResumed', async (node?: AgentNode) => {
     if (!node) return;
     await launcher.start(node, 'resume');
-    files.setScope(node.folder);
+    files.follow(node.folder);
   });
 
   register('cliGrid.startFresh', async (node?: AgentNode) => {
     if (!node) return;
     await launcher.start(node, 'new');
-    files.setScope(node.folder);
+    files.follow(node.folder);
   });
 
   register('cliGrid.removeAgent', (node?: AgentNode) => node && launcher.removeAgent(node));
@@ -184,9 +161,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     agent.terminal.show(true);
     // Point the Files view at what this CLI is actually working on.
-    if (vscode.workspace.getConfiguration('cliGrid').get<boolean>('revealOnFocus', true)) {
-      files.setScope(agent.folder);
-    }
+    files.follow(agent.folder);
   });
 
   register('cliGrid.applyLayout', async (id?: string) => {

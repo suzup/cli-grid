@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { AUTO_LAYOUT, autoPreset, paneCount } from './layout.js';
-import { LAYOUT_PRESETS, type LayoutPreset } from './types.js';
+import { AUTO_LAYOUT, LAYOUT_PRESETS, autoPreset, paneCount } from './layout.js';
+import type { LayoutPreset } from './types.js';
 
 /**
  * The splits as a visible list rather than a hidden command.
@@ -45,17 +45,21 @@ export class LayoutTreeProvider implements vscode.TreeDataProvider<LayoutPreset>
       vscode.TreeItemCollapsibleState.None,
     );
     item.id = `layout:${preset.id}`;
+    // The presets are data, so their descriptions reach `t` as a variable. The
+    // key is still the English string, which is all the lookup needs — only the
+    // extraction tool cares, and this bundle is maintained by hand.
+    const detail = vscode.l10n.t(preset.detail);
     item.description = auto
       ? vscode.l10n.t('follows the agent count — now {0}', effective.label)
-      : `${preset.detail}  ·  ${paneCount(preset)}`;
+      : `${detail}  ·  ${paneCount(preset)}`;
     item.iconPath = new vscode.ThemeIcon(
       preset.id === this.current ? 'check' : 'blank',
     );
     item.contextValue = 'cliGrid.layout';
-    item.tooltip = preset.detail;
+    item.tooltip = detail;
     item.command = {
       command: 'cliGrid.applyLayout',
-      title: preset.detail,
+      title: detail,
       arguments: [preset.id],
     };
     return item;
