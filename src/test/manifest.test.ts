@@ -72,6 +72,22 @@ describe('commands', () => {
     }
   });
 
+  // Every operation on that view resolves a file to the folder holding it —
+  // `FileNode.folder` — so restricting one to folders only hides it from the
+  // row someone actually right-clicked, which is how New went missing on files.
+  it('offers every Files view operation on files as well as folders', () => {
+    const items: { command?: string; when?: string }[] =
+      manifest.contributes.menus['view/item/context'] ?? [];
+
+    for (const item of items) {
+      if (!item.when?.includes('cliGrid.files')) continue;
+      assert.ok(
+        !/viewItem == cliGrid\.dir/.test(item.when),
+        `${item.command} only appears on folders; it should resolve a file to its parent`,
+      );
+    }
+  });
+
   it('only binds keys to declared commands', () => {
     for (const binding of manifest.contributes.keybindings ?? []) {
       assert.ok(declared.has(binding.command), `a keybinding runs undeclared ${binding.command}`);

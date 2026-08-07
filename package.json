@@ -416,12 +416,12 @@
         },
         {
           "command": "cliGrid.newFile",
-          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
           "group": "1_new@1"
         },
         {
           "command": "cliGrid.newFolder",
-          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
           "group": "1_new@2"
         },
         {
@@ -436,7 +436,7 @@
         },
         {
           "command": "cliGrid.openInTerminal",
-          "when": "view == cliGrid.files && viewItem == cliGrid.dir",
+          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
           "group": "2_workspace@3"
         },
         {
@@ -729,6 +729,7 @@
     "lint": "eslint src --ext ts",
     "test": "tsc -p tsconfig.test.json && node --test \"out/test/*.test.js\"",
     "test:ui": "tsc -p tsconfig.test.json && vscode-test",
+    "test:ui:headless": "xvfb-run -a npm run test:ui",
     "package": "vsce package --no-dependencies",
     "reinstall": "npm run build && vsce package --no-dependencies -o cli-grid.vsix && code --install-extension cli-grid.vsix --force"
   },

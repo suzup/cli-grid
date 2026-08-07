@@ -19,6 +19,7 @@ npm run typecheck
 npm run lint
 npm test           # unit, in plain node
 npm run test:ui    # integration, in a real VS Code
+npm run test:ui:headless   # the same, off-screen (needs xvfb)
 npm run package    # produces a .vsix
 ```
 
@@ -37,12 +38,24 @@ actually registered.
 `src/integration` runs inside a real VS Code that `npm run test:ui` downloads on
 first use. This is for claims that are only true of a workbench: that a split
 produces the groups it says it does, that a file lands beside the grid, that a
-pane holding an agent refuses one. On a headless machine, run it under
-`xvfb-run -a`; under WSL, WSLg supplies the display already.
+pane holding an agent refuses one.
 
-The extension itself is loaded in that window and applies a layout on startup,
-so a new integration test should let the editor area settle before arranging
-anything — see `quiet()` in `grid.test.ts`.
+That window takes focus while it runs, which is unbearable if you are working.
+`npm run test:ui:headless` puts it on an off-screen display instead — install
+`xvfb` first (`sudo apt install xvfb` on Debian and Ubuntu). CI uses the same
+thing. Under WSL, WSLg supplies a real display, so the plain command works too
+if you do not mind the window.
+
+Two things about that window are worth knowing before writing a test in it. It
+renders only the visible editor, so a terminal that has not been shown has no
+label and never becomes active — find terminals by `TabInputTerminal`, and use
+`agentTerminal`, which shows one and waits for it. And the extension itself is
+loaded there, with an editor grid of its own that reacts to terminals opening,
+so the suite runs with pane locking off and the tests that need it on come
+last.
+
+It also applies a layout on startup, so let the editor area settle before
+arranging anything — see `quiet()` in `grid.test.ts`.
 
 ## Layout of the source
 

@@ -39,6 +39,12 @@ export class EditorGrid implements vscode.Disposable {
   /** True while this class is moving editors about, which fires tab events. */
   private arranging = false;
 
+  /**
+   * Whether a pane has ever been locked. Until one has, the workbench is in the
+   * state an unlock pass would put it in, so there is nothing to do.
+   */
+  private everLocked = false;
+
   constructor() {
     this.disposables.push(
       // A pane earns its lock by holding an agent, so the locks follow agents
@@ -202,13 +208,24 @@ export class EditorGrid implements vscode.Disposable {
   }
 
   private async doSetLocks(wanted: (group: vscode.TabGroup) => boolean): Promise<void> {
+    const targets = vscode.window.tabGroups.all.map(
+      (group) => [group, wanted(group)] as const,
+    );
+
+    // A group starts out unlocked, so while nothing has ever been locked there
+    // is nothing to undo. Without this, every pass that wants everything
+    // unlocked — which is every pass at all when `lockAgentPanes` is off —
+    // still walks the groups focusing each one to unlock what is already
+    // unlocked, and takes the cursor away from whatever you were typing in.
+    if (!this.everLocked && targets.every(([, locked]) => !locked)) return;
+
     const active = vscode.window.activeTerminal;
     let moved = false;
 
-    for (const group of vscode.window.tabGroups.all) {
-      const locked = wanted(group);
+    for (const [group, locked] of targets) {
       if (this.locks.get(group.viewColumn) === locked) continue;
       this.locks.set(group.viewColumn, locked);
+      if (locked) this.everLocked = true;
       if (await setLock(group.viewColumn, locked)) moved = true;
     }
 
