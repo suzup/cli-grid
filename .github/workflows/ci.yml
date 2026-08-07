@@ -24,6 +24,11 @@ jobs:
       - run: npm run lint
       - run: npm test
 
+      # The integration tests drive a real VS Code, which needs a display; the
+      # runner has no screen, so xvfb provides one.
+      - name: Integration tests
+        run: xvfb-run -a npm run test:ui
+
       # Packaging is where a missing file or a bad manifest shows up, and it
       # costs seconds — worth catching here rather than at release time.
       - run: npx vsce package --no-dependencies -o cli-grid.vsix

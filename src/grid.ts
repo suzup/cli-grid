@@ -212,8 +212,10 @@ export class EditorGrid implements vscode.Disposable {
       if (await setLock(group.viewColumn, locked)) moved = true;
     }
 
-    // Locking has to focus each group in turn; put the user back where they were.
-    if (moved && active) active.show(false);
+    // Locking has to focus each group in turn; put the user back where they
+    // were. Not if that terminal has gone in the meantime — closing an agent is
+    // exactly what sets a lock pass off, so it races with this.
+    if (moved && active && vscode.window.terminals.includes(active)) active.show(false);
   }
 
   dispose(): void {

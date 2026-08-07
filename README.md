@@ -166,9 +166,11 @@ npm run watch     # esbuild in watch mode
 package` produces a `.vsix`. Changing `package.json` needs a full F5 restart
 rather than `Ctrl+R`, since the manifest is read once at startup.
 
-The tests run in plain node — `src/test/vscode.ts` stands in for the module the
-extension host injects — so they cover layout maths, path handling, config
-parsing and profile merging, and nothing that needs a workbench.
+There are two suites: `npm test` runs in plain node, against a stand-in for the
+`vscode` module, and covers layout maths, path handling, config parsing and
+profile merging. `npm run test:ui` drives a real VS Code, and covers the things
+only a workbench can answer — what a split produces, where a file lands, and
+whether a pane holding an agent refuses one.
 
 ## Known limitations
 

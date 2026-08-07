@@ -17,17 +17,32 @@ full F5 restart, because the manifest is only read at startup.
 ```bash
 npm run typecheck
 npm run lint
-npm test
+npm test           # unit, in plain node
+npm run test:ui    # integration, in a real VS Code
 npm run package    # produces a .vsix
 ```
 
-CI runs all four on every push and pull request.
+CI runs all of these on every push and pull request.
 
-The tests run in plain node, not in a workbench: `src/test/vscode.ts` stands in
-for the `vscode` module, so anything that reaches the real API is out of scope
-by construction. That is the point — it keeps the logic worth testing (layout
-maths, path handling) in modules that do not need one. Put new logic of that
-kind in `layout.ts` or `paths.ts` and it is testable for free.
+There are two test suites, and which one a thing belongs in is decided by
+whether it needs a window.
+
+`src/test` runs in plain node. `src/test/vscode.ts` stands in for the `vscode`
+module and throws on any member it has not been taught, so reaching for the real
+API fails loudly rather than passing against an empty stub. This is where layout
+maths, path handling, config parsing and profile merging are covered — and where
+`activate` is called, to check that every command the manifest declares is
+actually registered.
+
+`src/integration` runs inside a real VS Code that `npm run test:ui` downloads on
+first use. This is for claims that are only true of a workbench: that a split
+produces the groups it says it does, that a file lands beside the grid, that a
+pane holding an agent refuses one. On a headless machine, run it under
+`xvfb-run -a`; under WSL, WSLg supplies the display already.
+
+The extension itself is loaded in that window and applies a layout on startup,
+so a new integration test should let the editor area settle before arranging
+anything — see `quiet()` in `grid.test.ts`.
 
 ## Layout of the source
 

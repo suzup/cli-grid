@@ -5,3 +5,4 @@ out/
 *.log
 .DS_Store
 cli-grid.vsix
+.vscode-test/

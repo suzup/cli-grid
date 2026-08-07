@@ -12,3 +12,5 @@ eslint.config.mjs
 CONTRIBUTING.md
 .editorconfig
 tsconfig.test.json
+.vscode-test.mjs
+.vscode-test/
