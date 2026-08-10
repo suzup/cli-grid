@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { EditorGrid } from './grid.js';
 import { AUTO_LAYOUT, LAYOUT_PRESETS, autoPreset, paneCount, resolveLayout } from './layout.js';
-import { updateConfig, type ProjectWatcher } from './project.js';
+import { inProjectOrder, pinnedAgents, updateConfig, type ProjectWatcher } from './project.js';
 import type { AgentRegistry } from './registry.js';
 import type { LayoutPreset } from './types.js';
 
@@ -21,7 +21,10 @@ export class LayoutController {
 
   /** The layout in force, which is what the checkmark in the view follows. */
   async apply(id: string): Promise<void> {
-    const running = this.registry.list();
+    // In the order the Agents view lists them, not the order they were started
+    // in: the panes are how a split is read, and the list is where their order
+    // was decided.
+    const running = inProjectOrder(this.projects.projects(), this.registry.list());
     const preset = resolveLayout(id, running.length);
     if (!preset) return;
 
@@ -54,7 +57,9 @@ export class LayoutController {
     const id = project?.config.layout ?? AUTO_LAYOUT;
     this.view.setCurrent(id);
 
-    const preset = resolveLayout(id, project?.config.agents.length ?? 0);
+    // Sized for the agents the start button would bring up, since that is what
+    // is about to fill it — an un-pinned agent would leave an empty pane.
+    const preset = resolveLayout(id, pinnedAgents(project?.config).length);
     if (preset) await this.grid.applyPreset(preset, this.projects.any);
   }
 }

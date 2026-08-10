@@ -10,21 +10,20 @@ pane**.
 
 ```
 ┌ CLI GRID ───────────┬──────────────────┬──────────────────┐
-│ ▾ AGENTS       + ⟳  │ ✨ Claude · api   │ 🚀 Codex · api    │
+│ ▾ AGENTS       + ⟳  │ ✨ api · Claude   │ 🚀 api · Codex    │
 │  ▾ work    main ↑2  │                  │                  │
 │    ✨ api      Claude│                  │                  │
 │    🚀 api      Codex ├──────────────────┼──────────────────┤
-│    ▷ web      Gemini │ ⭐ Gemini · web   │                  │
-│                     │                  │                  │
-│ ▾ FILES  api—main ↑2│                  │                  │
-│  ▾ src              │                  │                  │
-│      index.ts     M │                  │                  │
-│      auth.ts      U │                  │                  │
-│    package.json     │                  │                  │
+│    ▷ web      Gemini │ ⭐ web · Gemini   │                  │
 │                     │                  │                  │
 │ ▾ LAYOUT            │                  │                  │
 │ ✓ ▣▣    Auto        │                  │                  │
 │   ▣▣╱▣▣ 2 × 2       │                  │                  │
+│                     │                  │                  │
+│ ▾ EXPLORER          │                  │                  │
+│  ▸ work             │                  │                  │
+│  ▸ api              │  ← the agents'   │                  │
+│  ▸ web              │    folders, open │                  │
 └─────────────────────┴──────────────────┴──────────────────┘
 ```
 
@@ -37,38 +36,33 @@ up again tomorrow.
 
 - **One command per agent** — pick a folder, pick a CLI. The choice is written to
   the project, so it is there next time.
-- **Tabs that say where they are** — `Claude Code · api`, not `claude (2)`.
+- **Tabs that say where they are** — `api · Claude Code`, not `claude (2)`.
 - **Rows named after the folder they work in**, with the CLI as the description
   — the question you have looking at the list is *which repository is this*.
   Drag rows to reorder them, which also decides which pane each agent opens in,
   and use the gear for that agent's own settings: a display name, a different
   CLI, or how it starts.
-- **A Files view that follows the agent you are looking at.** Select an agent —
-  or just click its terminal tab — and the tree switches to the folder that CLI
-  is working in, with the branch in the header.
-- **`Ctrl+P` finds a file in that folder, not in the wrapper.** In a CLI Grid
-  project the folder you opened is a container; the work is in the agents'
-  folders, so that is where the search goes — wherever they are, including
-  outside the workspace. Until an agent is focused, `Ctrl+P` is Quick Open as
-  usual.
-- **Real git**, from VS Code's own Git extension: branch, ahead/behind, change
-  count, and the usual colours on changed files. Folders outside the workspace
-  are registered explicitly, so agents pointed anywhere still get all of it.
+- **Every agent's folder is a folder of the window.** Adding an agent adds its
+  folder to the workspace, so the Explorer shows it, Source Control lists its
+  repository — stage, commit, push, publish a branch — and `Ctrl+P` and
+  `Ctrl+Shift+F` search it. Nothing here is a copy of those views: they are the
+  real ones, working on folders they would otherwise never have been told
+  about. Remove the folder from the workspace and CLI Grid offers to drop the
+  agent with it.
+- **A pin on each row, for which agents come up together.** Four agents in a
+  project is rarely four you want running every time, and the odd one out costs
+  a pane and a session. Un-pin it and the project's ▶ leaves it alone — it keeps
+  its place in the list, says `manual only`, and still starts when you start it.
+  The split is sized for the pinned ones, so nothing comes up with a hole in it.
+- **Real git**, from VS Code's own Git extension: branch, ahead/behind and
+  change count on each row, and the usual colours on changed files.
 - **Layouts that actually split** — 2 × 1, 2 × 2, 3 × 2 and so on, with the
   terminals distributed into the panes rather than stacked in the first one.
   `Auto` picks the smallest split that fits the agents you have.
 - **Files open beside the grid, never inside it.** The panes holding agents are
-  locked, so a file — from the Files view, quick open, or go to definition —
-  lands in one pane of its own next to the grid. They are ordinary editors:
-  drag the tab where you want it, split it, drag files out of the Files view.
-- **Drop files into the Files view to copy them there** — from another agent's
-  folder, from the Explorer, or from outside the window. Dropping on a folder
-  copies into it; a name that is taken gets " copy" rather than overwriting.
-- **The Explorer's operations, on that tree** — new file, new folder, rename
-  (`F2`), delete to the trash, cut/copy/paste, copy path, reveal in the OS file
-  manager, open in a terminal. Renaming goes through the workbench, so
-  TypeScript and the like still fix up the imports that pointed at the old path,
-  and it undoes with `Ctrl+Z`.
+  locked, so a file — from the Explorer, quick open, or go to definition — lands
+  in one pane of its own next to the grid. They are ordinary editors: drag the
+  tab where you want it, or split it.
 
 ## How it is configured
 
@@ -88,7 +82,8 @@ add agents. That writes `.vscode/cli-grid.json`:
   "agents": [
     { "folder": ".",   "cli": "claude" },
     { "folder": "api", "cli": "codex"  },
-    { "folder": "web", "cli": "gemini", "mode": "resume", "name": "storefront" }
+    { "folder": "web", "cli": "gemini", "mode": "resume", "name": "storefront" },
+    { "folder": "docs", "cli": "claude", "pinned": false }
   ]
 }
 ```
@@ -102,9 +97,19 @@ project root, so `"."` is the root and `"api"` is a subdirectory — which makes
 opening a parent directory full of repositories the natural shape. An absolute
 path works too, for a repository that lives somewhere else entirely.
 
+`pinned: false` keeps an agent in the list but out of the project's start
+button; it is what the pin on the row writes.
+
 Agents are listed but **not started** until you select them, so opening a folder
 never launches a CLI you did not ask for. Set `cliGrid.autoStart` for the
-opposite.
+opposite — it starts the pinned ones, the same set the button does.
+
+Opening the project puts each agent's folder into the window alongside it, which
+is what gives them an Explorer root, a Source Control entry and a place in quick
+open. The window then calls itself `Untitled (Workspace)` — that is VS Code's
+name for a window with more than one folder in it, and nothing about the way you
+opened the project changes: the folder list is rebuilt from the project file
+every time, so there is no workspace file to save or reopen.
 
 ## New vs resume
 
@@ -159,8 +164,6 @@ terminals start on the remote machine.
 | `cliGrid.defaultMode` | `new` | `new` or `resume` |
 | `cliGrid.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
 | `cliGrid.autoStart` | `false` | Start the folder's agents as soon as it opens |
-| `cliGrid.revealOnFocus` | `true` | Point the Files view at the selected agent's folder |
-| `cliGrid.showHiddenFiles` | `false` | Show dotfiles in the Files view |
 | `cliGrid.lockAgentPanes` | `true` | Lock the panes holding an agent, so files open beside the grid |
 | `cliGrid.profiles` | `{}` | Merged over the built-in CLI profiles |
 
@@ -190,10 +193,8 @@ whether a pane holding an agent refuses one.
   VS Code removed the `moveEditorToNthGroup` commands in 1.25.1. It is reliable
   but not instantaneous with many panes.
 - More agents than panes wrap into tabs, so the last panes hold several agents.
-- The Files view does not watch the filesystem, so a file an agent has just
-  created appears after a refresh rather than on its own. Watching an arbitrary
-  folder recursively is expensive on a large tree, and a cheap version of this
-  is worse than none.
+- An agent's folder is added to the window, never the other way round: a folder
+  you add yourself is not adopted as an agent.
 
 ## License
 

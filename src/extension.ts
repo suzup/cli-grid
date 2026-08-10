@@ -1,16 +1,14 @@
 import * as vscode from 'vscode';
 import { registerCommands } from './commands.js';
-import { SECTION, setting, updateSetting } from './config.js';
-import { registerFileCommands } from './fileops.js';
-import { FilesTreeProvider, searchFiles } from './files.js';
+import { SECTION, setting } from './config.js';
 import { GitStatus } from './git.js';
 import { EditorGrid } from './grid.js';
 import { Launcher } from './launcher.js';
 import { LayoutController, LayoutTreeProvider } from './layouts.js';
-import { basename, dirnameOf, relativeTo } from './paths.js';
 import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
+import { WorkspaceRoots } from './roots.js';
 import { StatusBar } from './statusbar.js';
 import { AgentsTreeProvider, type AgentNode, type Node, type ProjectNode } from './tree.js';
 
@@ -21,43 +19,21 @@ export function activate(context: vscode.ExtensionContext): void {
   const git = new GitStatus();
   const registry = new AgentRegistry();
   const grid = new EditorGrid();
-  const launcher = new Launcher(projects, registry, grid, context);
+  const roots = new WorkspaceRoots(projects, registry);
+  const launcher = new Launcher(projects, registry, grid, context, roots);
   const tree = new AgentsTreeProvider(projects, registry, git);
-  const files = new FilesTreeProvider(registry, git);
   const layoutView = new LayoutTreeProvider();
   const layouts = new LayoutController(layoutView, grid, registry, projects);
   const statusBar = new StatusBar(projects, registry);
 
-  context.subscriptions.push(projects, git, registry, grid, tree, files, layoutView, statusBar);
-
-  const filesView = vscode.window.createTreeView('cliGrid.files', {
-    treeDataProvider: files,
-    showCollapseAll: true,
-    // Multi-select and dragging out to an editor, a terminal or another window
-    // are what make this behave like a file tree rather than a list of links.
-    canSelectMany: true,
-    dragAndDropController: files,
-  });
-  const syncFilesHeader = () => {
-    filesView.description = files.headerFor();
-  };
-  syncFilesHeader();
-  registerFileCommands(context, filesView, files);
-
-  const trackGitFolders = () => {
-    for (const project of projects.projects()) void git.track(project.uri);
-    for (const agent of registry.list()) void git.track(agent.folder);
-  };
+  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar);
 
   context.subscriptions.push(
-    registry.onDidChange(() => {
-      layoutView.setAgentCount(registry.list().length);
-      trackGitFolders();
-    }),
-    projects.onDidChange(trackGitFolders),
-    filesView,
-    files.onDidChangeScope(syncFilesHeader),
-    git.onDidChange(syncFilesHeader),
+    registry.onDidChange(() => layoutView.setAgentCount(registry.list().length)),
+    // Every configured agent's folder is a folder of this window, so the
+    // Explorer, Source Control and quick open all reach it without CLI Grid
+    // standing in for any of them.
+    projects.onDidChange(() => void roots.sync()),
     vscode.window.createTreeView('cliGrid.layout', { treeDataProvider: layoutView }),
     vscode.window.createTreeView('cliGrid.agents', {
       treeDataProvider: tree,
@@ -100,6 +76,9 @@ export function activate(context: vscode.ExtensionContext): void {
       if (root) await launcher.startAll(root, 'resume');
     },
 
+    'cliGrid.pinAgent': (node?: AgentNode) => node && launcher.setPinned(node, true),
+    'cliGrid.unpinAgent': (node?: AgentNode) => node && launcher.setPinned(node, false),
+
     'cliGrid.editAgent': (node?: AgentNode) => node && launcher.editAgent(node),
     'cliGrid.removeAgent': (node?: AgentNode) => node && launcher.removeAgent(node),
     'cliGrid.saveAgent': (node?: AgentNode) => node && launcher.saveAgent(node),
@@ -116,54 +95,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
     'cliGrid.focusAgent': (node?: AgentNode) => {
       const agent = node?.running ?? registry.list()[0];
-      if (!agent) return;
-      agent.terminal.show(true);
-      // Point the Files view at what this CLI is actually working on.
-      files.follow(agent.folder);
+      agent?.terminal.show(true);
     },
 
     'cliGrid.applyLayout': (id?: string) => id && layouts.apply(id),
-
-    // Quick Open searches the folder the window was opened on, which in a CLI
-    // Grid project is a wrapper holding the folders the work is actually in.
-    // This searches the one the selected CLI is working in — the folder whose
-    // output you have in front of you — and takes `Ctrl+P` over for it.
-    'cliGrid.findFile': async () => {
-      const scope = files.currentScope();
-      const agentFolder = registry
-        .list()
-        .some((agent) => agent.folder.toString() === scope?.toString());
-
-      // Until an agent is focused the tree is showing the folder the window was
-      // opened on, and searching that is the workbench's own job — done better,
-      // with its index. So `Ctrl+P` stays itself right up to the point where
-      // there is something more specific for it to mean.
-      if (!scope || !agentFolder) {
-        await vscode.commands.executeCommand('workbench.action.quickOpen');
-        return;
-      }
-
-      const picked = await vscode.window.showQuickPick(searchItems(scope), {
-        placeHolder: vscode.l10n.t('Search files in {0}', basename(scope.path)),
-        // The folder a name sits in is half of telling two `index.ts` apart.
-        matchOnDescription: true,
-      });
-      if (picked) await grid.openFile(picked.uri);
-    },
-
-    'cliGrid.toggleHiddenFiles': async () => {
-      await updateSetting('showHiddenFiles', !setting('showHiddenFiles'));
-      files.refresh();
-    },
 
     'cliGrid.openConfig': async (node?: ProjectNode) => {
       const root = rootOf(node);
       if (root) await grid.openFile(await openableConfigUri(root), false);
     },
-
-    // Everything the Files view opens goes through here, so it lands beside the
-    // grid instead of on top of an agent.
-    'cliGrid.openFile': (uri?: vscode.Uri) => uri && grid.openFile(uri),
 
     'cliGrid.showAgents': () =>
       vscode.commands.executeCommand('workbench.view.extension.cliGrid'),
@@ -172,50 +112,12 @@ export function activate(context: vscode.ExtensionContext): void {
       clearProfileCache();
       await projects.refresh();
       tree.refresh();
-      files.refresh();
     },
   });
 
-  /** Starting an agent is also selecting it, so the Files view comes along. */
-  async function startAgent(node: AgentNode, mode?: 'new' | 'resume'): Promise<void> {
-    await launcher.start(node, mode);
-    files.follow(node.folder);
-  }
+  const startAgent = (node: AgentNode, mode?: 'new' | 'resume') => launcher.start(node, mode);
 
-  void start(context, projects, launcher, layouts);
-}
-
-interface FileItem extends vscode.QuickPickItem {
-  uri: vscode.Uri;
-}
-
-/**
- * The files under a folder as something to pick from.
- *
- * The name leads and the folder describes it, so typing matches a file name
- * first and the path only once `matchOnDescription` widens it — which is the
- * order you think in when you know what a file is called.
- */
-async function searchItems(scope: vscode.Uri): Promise<FileItem[]> {
-  const { files, truncated } = await searchFiles(scope);
-
-  if (truncated) {
-    void vscode.window.showInformationMessage(
-      vscode.l10n.t('{0} has too many files to list them all; searching the first {1}.',
-        basename(scope.path),
-        files.length,
-      ),
-    );
-  }
-
-  return files.map((uri) => {
-    const folder = relativeTo(scope, dirnameOf(uri));
-    return {
-      uri,
-      label: basename(uri.path),
-      description: folder === '.' ? undefined : folder,
-    } satisfies FileItem;
-  });
+  void start(context, projects, launcher, layouts, roots);
 }
 
 export function deactivate(): void {
@@ -227,8 +129,15 @@ async function start(
   projects: ProjectWatcher,
   launcher: Launcher,
   layouts: LayoutController,
+  roots: WorkspaceRoots,
 ): Promise<void> {
   await projects.refresh();
+
+  // Before anything else looks at the window: the folders the agents work in
+  // are part of what this window is, and the layout and the views that follow
+  // should be reading a workspace that is already complete.
+  await roots.sync();
+
   await layouts.restore();
 
   if (setting('autoStart')) {

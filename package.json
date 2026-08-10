@@ -103,6 +103,18 @@
         "icon": "$(save)"
       },
       {
+        "command": "cliGrid.pinAgent",
+        "title": "%cliGrid.pinAgent.title%",
+        "category": "CLI Grid",
+        "icon": "$(pinned)"
+      },
+      {
+        "command": "cliGrid.unpinAgent",
+        "title": "%cliGrid.unpinAgent.title%",
+        "category": "CLI Grid",
+        "icon": "$(pin)"
+      },
+      {
         "command": "cliGrid.editAgent",
         "title": "%command.editAgent%",
         "category": "CLI Grid",
@@ -140,85 +152,6 @@
       {
         "command": "cliGrid.applyLayout",
         "title": "%cmd.applyLayout%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.findFile",
-        "title": "%cmd.findFile%",
-        "category": "CLI Grid",
-        "icon": "$(search)"
-      },
-      {
-        "command": "cliGrid.toggleHiddenFiles",
-        "title": "%cmd.toggleHiddenFiles%",
-        "category": "CLI Grid",
-        "icon": "$(eye)"
-      },
-      {
-        "command": "cliGrid.openFile",
-        "title": "%cmd.openFile%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.newFile",
-        "title": "%cmd.newFile%",
-        "category": "CLI Grid",
-        "icon": "$(new-file)"
-      },
-      {
-        "command": "cliGrid.newFolder",
-        "title": "%cmd.newFolder%",
-        "category": "CLI Grid",
-        "icon": "$(new-folder)"
-      },
-      {
-        "command": "cliGrid.rename",
-        "title": "%cmd.rename%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.delete",
-        "title": "%cmd.delete%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.copy",
-        "title": "%cmd.copy%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.cut",
-        "title": "%cmd.cut%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.paste",
-        "title": "%cmd.paste%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.copyPath",
-        "title": "%cmd.copyPath%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.copyRelativePath",
-        "title": "%cmd.copyRelativePath%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.revealInOS",
-        "title": "%cmd.revealInOS%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.revealInExplorer",
-        "title": "%cmd.revealInExplorer%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.openInTerminal",
-        "title": "%cmd.openInTerminal%",
         "category": "CLI Grid"
       }
     ],
@@ -265,55 +198,11 @@
           "when": "false"
         },
         {
-          "command": "cliGrid.openFile",
+          "command": "cliGrid.pinAgent",
           "when": "false"
         },
         {
-          "command": "cliGrid.newFile",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.newFolder",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.rename",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.delete",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.copy",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.cut",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.paste",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.copyPath",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.copyRelativePath",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.revealInOS",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.revealInExplorer",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.openInTerminal",
+          "command": "cliGrid.unpinAgent",
           "when": "false"
         }
       ],
@@ -347,51 +236,6 @@
           "command": "cliGrid.refresh",
           "when": "view == cliGrid.agents",
           "group": "1_config@2"
-        },
-        {
-          "command": "cliGrid.findFile",
-          "when": "view == cliGrid.files",
-          "group": "navigation@1"
-        },
-        {
-          "command": "cliGrid.toggleHiddenFiles",
-          "when": "view == cliGrid.files",
-          "group": "navigation@2"
-        },
-        {
-          "command": "cliGrid.newFile",
-          "when": "view == cliGrid.files",
-          "group": "navigation@3"
-        },
-        {
-          "command": "cliGrid.newFolder",
-          "when": "view == cliGrid.files",
-          "group": "navigation@4"
-        },
-        {
-          "command": "cliGrid.newFile",
-          "when": "view == cliGrid.files",
-          "group": "1_new@1"
-        },
-        {
-          "command": "cliGrid.newFolder",
-          "when": "view == cliGrid.files",
-          "group": "1_new@2"
-        },
-        {
-          "command": "cliGrid.paste",
-          "when": "view == cliGrid.files && cliGrid.canPaste",
-          "group": "2_clipboard@1"
-        },
-        {
-          "command": "cliGrid.findFile",
-          "when": "view == cliGrid.files",
-          "group": "3_open@1"
-        },
-        {
-          "command": "cliGrid.openInTerminal",
-          "when": "view == cliGrid.files",
-          "group": "3_open@2"
         }
       ],
       "view/item/context": [
@@ -422,12 +266,12 @@
         },
         {
           "command": "cliGrid.startResumed",
-          "when": "view == cliGrid.agents && viewItem == cliGrid.agent.stopped.new",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\.stopped\\.new/",
           "group": "inline@2"
         },
         {
           "command": "cliGrid.startFresh",
-          "when": "view == cliGrid.agents && viewItem == cliGrid.agent.stopped.resume",
+          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.agent\\.stopped\\.resume/",
           "group": "inline@2"
         },
         {
@@ -451,63 +295,23 @@
           "group": "9_danger@1"
         },
         {
-          "command": "cliGrid.newFile",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "1_new@1"
+          "command": "cliGrid.unpinAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /\\.pinned$/",
+          "group": "inline@8"
         },
         {
-          "command": "cliGrid.newFolder",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "1_new@2"
+          "command": "cliGrid.pinAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /\\.unpinned$/",
+          "group": "inline@8"
         },
         {
-          "command": "cliGrid.revealInOS",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "2_workspace@1"
+          "command": "cliGrid.unpinAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /\\.pinned$/",
+          "group": "7_modification@2"
         },
         {
-          "command": "cliGrid.revealInExplorer",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "2_workspace@2"
-        },
-        {
-          "command": "cliGrid.openInTerminal",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "2_workspace@3"
-        },
-        {
-          "command": "cliGrid.cut",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "5_cutcopypaste@1"
-        },
-        {
-          "command": "cliGrid.copy",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "5_cutcopypaste@2"
-        },
-        {
-          "command": "cliGrid.paste",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "5_cutcopypaste@3"
-        },
-        {
-          "command": "cliGrid.copyPath",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "6_copypath@1"
-        },
-        {
-          "command": "cliGrid.copyRelativePath",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "6_copypath@2"
-        },
-        {
-          "command": "cliGrid.rename",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
-          "group": "7_modification@1"
-        },
-        {
-          "command": "cliGrid.delete",
-          "when": "view == cliGrid.files && viewItem =~ /^cliGrid\\.(file|dir)$/",
+          "command": "cliGrid.pinAgent",
+          "when": "view == cliGrid.agents && viewItem =~ /\\.unpinned$/",
           "group": "7_modification@2"
         },
         {
@@ -530,13 +334,6 @@
           "contextualTitle": "CLI Grid",
           "visibility": "visible",
           "initialSize": 2
-        },
-        {
-          "id": "cliGrid.files",
-          "name": "%view.files%",
-          "contextualTitle": "CLI Grid",
-          "visibility": "visible",
-          "initialSize": 5
         },
         {
           "id": "cliGrid.layout",
@@ -604,11 +401,6 @@
           "default": false,
           "markdownDescription": "%config.autoStart%"
         },
-        "cliGrid.revealOnFocus": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "%config.revealOnFocus%"
-        },
         "cliGrid.profiles": {
           "type": "object",
           "scope": "window",
@@ -665,11 +457,6 @@
             }
           }
         },
-        "cliGrid.showHiddenFiles": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "%config.showHiddenFiles%"
-        },
         "cliGrid.lockAgentPanes": {
           "type": "boolean",
           "default": true,
@@ -723,48 +510,6 @@
           "title": "CLI Grid",
           "icon": "media/cli-grid.svg"
         }
-      ]
-    },
-    "keybindings": [
-      {
-        "command": "cliGrid.findFile",
-        "key": "ctrl+p",
-        "mac": "cmd+p",
-        "when": "cliGrid.isProject"
-      },
-      {
-        "command": "cliGrid.rename",
-        "key": "f2",
-        "when": "focusedView == cliGrid.files"
-      },
-      {
-        "command": "cliGrid.delete",
-        "key": "delete",
-        "mac": "cmd+backspace",
-        "when": "focusedView == cliGrid.files"
-      },
-      {
-        "command": "cliGrid.copy",
-        "key": "ctrl+c",
-        "mac": "cmd+c",
-        "when": "focusedView == cliGrid.files"
-      },
-      {
-        "command": "cliGrid.cut",
-        "key": "ctrl+x",
-        "mac": "cmd+x",
-        "when": "focusedView == cliGrid.files"
-      },
-      {
-        "command": "cliGrid.paste",
-        "key": "ctrl+v",
-        "mac": "cmd+v",
-        "when": "focusedView == cliGrid.files"
-      }
-    ],
-    "configurationDefaults": {
-      "terminal.integrated.commandsToSkipShell": [
-        "cliGrid.findFile"
       ]
     }
   },

@@ -35,6 +35,11 @@ export const state = {
   commands: new Map<string, (...args: unknown[]) => unknown>(),
   /** Commands it has asked the workbench to run, in order. */
   executed: [] as string[],
+  /** The folders this window has open, which `updateWorkspaceFolders` edits. */
+  folders: [] as { uri: URI; name: string; index: number }[],
+  /** What the code offered the user, and which button a test wants pressed. */
+  prompts: [] as string[],
+  answer: undefined as string | undefined,
 };
 
 export function reset(): void {
@@ -42,6 +47,10 @@ export function reset(): void {
   state.messages.length = 0;
   state.commands.clear();
   state.executed.length = 0;
+  state.folders.length = 0;
+  state.prompts.length = 0;
+  state.answer = undefined;
+  folderChanges.dispose();
 }
 
 const noop = { dispose() {} };
@@ -120,6 +129,43 @@ const record = (message: string) => {
   return Promise.resolve(undefined);
 };
 
+/**
+ * The real `showWarningMessage` hands back the button that was pressed, and the
+ * code under test does different things depending on which. A test says in
+ * advance which one the user picks.
+ */
+const ask = (message: string, ...rest: unknown[]) => {
+  state.prompts.push(message);
+  const buttons = rest.filter((item): item is string => typeof item === 'string');
+  return Promise.resolve(buttons.find((button) => button === state.answer));
+};
+
+const folderChanges = new EventEmitter<{
+  added: readonly unknown[];
+  removed: readonly unknown[];
+}>();
+
+/** The splice the real one does, plus the event the workbench would fire. */
+function updateWorkspaceFolders(
+  start: number,
+  deleteCount: number | null,
+  ...added: { uri: URI }[]
+): boolean {
+  const removed = state.folders.splice(
+    start,
+    deleteCount ?? 0,
+    ...added.map((folder, offset) => ({
+      uri: folder.uri,
+      name: folder.uri.path.split('/').filter(Boolean).pop() ?? '',
+      index: start + offset,
+    })),
+  );
+  state.folders.forEach((folder, index) => (folder.index = index));
+  // The workbench applies it and then says so, which is what the code waits on.
+  queueMicrotask(() => folderChanges.fire({ added, removed }));
+  return true;
+}
+
 const members: Record<string, unknown> = {
   Uri: URI,
   FileType,
@@ -134,8 +180,17 @@ const members: Record<string, unknown> = {
   workspace: {
     fs: workspaceFs,
     getConfiguration: configuration,
-    workspaceFolders: undefined,
-    onDidChangeWorkspaceFolders: never,
+    get workspaceFolders() {
+      return state.folders.length ? state.folders : undefined;
+    },
+    getWorkspaceFolder(uri: URI) {
+      const path = uri.path.replace(/\/+$/, '');
+      return state.folders.find(
+        (folder) => path === folder.uri.path || path.startsWith(`${folder.uri.path}/`),
+      );
+    },
+    updateWorkspaceFolders,
+    onDidChangeWorkspaceFolders: folderChanges.event,
     onDidChangeConfiguration: never,
     createFileSystemWatcher: () => ({
       onDidCreate: never,
@@ -146,9 +201,10 @@ const members: Record<string, unknown> = {
   },
   window: {
     showInformationMessage: record,
-    showWarningMessage: record,
+    showWarningMessage: ask,
     showErrorMessage: record,
     activeTerminal: undefined,
+    terminals: [],
     onDidChangeActiveTerminal: never,
     onDidCloseTerminal: never,
     tabGroups: { all: [], onDidChangeTabs: never },

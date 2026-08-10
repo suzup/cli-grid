@@ -6,57 +6,42 @@ First release.
 
 ### Added
 
-- **CLI Grid view container** in the Activity Bar, holding three views:
-  **Agents**, **Files** and **Layout**.
+- **CLI Grid view container** in the Activity Bar, holding **Agents** and
+  **Layout**. Files and git are the workbench's own views, on folders CLI Grid
+  puts in the window.
 - **Per-folder configuration** in `.vscode/cli-grid.json`. Opening a folder
   restores its agents and split; a different set of agents is a different
   folder. Commit the file to share a setup, or gitignore it to keep it local.
+- **Each agent's folder added to the window** as a workspace folder, so the
+  Explorer, Source Control and quick open reach it — an agent regularly works
+  outside the folder you opened, and none of those would otherwise know it
+  exists. Adding an agent adds its folder; removing one takes it back out; and
+  removing the folder yourself offers to remove the agents that worked in it,
+  their settings included. The folder list is rebuilt from the project file on
+  every open, so the way in is still File > Open Folder — there is no workspace
+  file to save. Appending folders is deliberate: replacing the first one would
+  restart the extension host and take every running agent with it.
 - **Built-in CLI profiles** for Claude Code, Codex and Gemini, with a
   new-vs-resume choice per launch, per profile or per agent. Arguments are
   passed through untouched, and `cliGrid.profiles` adds or hides entries.
 - **Agent rows named after their folder** — the last segment of it, with the CLI
   as the description and the whole path in the hover.
-- **Files view scoped to the focused agent** — selecting an agent, or clicking
-  its terminal tab, switches the tree to the folder that CLI runs in. File icons
-  and git colours come from the icon theme and the built-in Git extension.
-- **Find a file by name in the focused agent's folder** — `Ctrl+P` anywhere in a
-  CLI Grid project, the search button on the Files view, or _CLI Grid: Find File
-  in the Agent's Folder_. It walks the folder itself rather than going through
-  the workbench's search, so it reaches agents working outside the opened
-  folder, and what it finds opens in the file pane beside the grid. With no
-  agent focused there is nothing more specific to search than the folder the
-  window was opened on, so `Ctrl+P` hands back to Quick Open.
-- **Git for folders outside the workspace**, registered through the Git API's
-  `openRepository`, so agents pointed anywhere still show branch, ahead/behind
-  and change counts.
 - **Layouts that distribute terminals** into their panes: 1, 2 × 1, 1 × 2,
   3 × 1, 2 × 2, 3 × 2, 4 × 2, plus `Auto`, which picks the smallest split that
   fits the running agents. More agents than panes wrap into tabs.
 - **A file pane beside the grid.** Panes holding an agent are locked, so files
-  opened from the Files view — or from quick open, or go to definition — split
-  off one pane next to the grid and stack there as ordinary tabs, leaving the
-  grid its shape. Re-splitting the grid takes them along. Turn it off with
+  opened from the Explorer — or from quick open, or go to definition — split off
+  one pane next to the grid and stack there as ordinary tabs, leaving the grid
+  its shape. Re-splitting the grid takes them along. Turn it off with
   `cliGrid.lockAgentPanes`.
-- **Drag out of the Files view** — onto an editor group, onto a terminal, which
-  pastes the path, or into another window. Multi-select works.
-- **Drop into the Files view to copy** — from another agent's folder, from the
-  Explorer, or from outside the window. The drop target's folder receives the
-  copy, and a name already in use gets " copy" appended, so nothing is
-  overwritten and nothing is moved out of where it was.
-- **A context menu on the empty part of the Files view** — new file, new folder,
-  paste, find, open in terminal — all acting on the folder the view is showing,
-  which is where you reach for New when no row is the one you mean.
-- **File operations on the Files view**: new file, new folder, rename (`F2`),
-  delete to the trash, cut/copy/paste (`Ctrl+X`/`C`/`V`), copy path, copy
-  relative path, reveal in the OS file manager, reveal in VS Code's Explorer,
-  open in the integrated terminal. Where the workbench already has the command
-  it is forwarded to it; rename and paste-after-cut go through `WorkspaceEdit`,
-  so the file-operation participants run — imports get updated — and the change
-  is undoable. Delete honours `explorer.confirmDelete` and asks once for a whole
-  selection rather than once per file.
 - **Drag to reorder agents** in the Agents view. The order is the order in the
-  project file, which is also the order `startAll` hands out panes in, so
-  dragging a row is how you decide which pane an agent comes up in.
+  project file, which is also the order `startAll` hands out panes in and the
+  order re-applying a split arranges them in, so dragging a row is how you
+  decide which pane an agent comes up in — whichever order they were started in.
+- **A pin per agent**, deciding which of them the project's start button brings
+  up. Un-pinned agents keep their place in the list and start on their own; the
+  split is sized for the pinned ones. Written as `"pinned": false`, so a project
+  file that says nothing about pins starts everything, as it always did.
 - **Per-agent settings** (the gear on each row): a display name, which CLI it
   runs, and whether it starts new or resumed. Each is written to that agent's
   own entry in the project file — `cliGrid.profiles` remains the place for a

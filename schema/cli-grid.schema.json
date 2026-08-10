@@ -48,6 +48,11 @@
           "name": {
             "type": "string",
             "description": "Shown in the Agents view instead of the folder name."
+          },
+          "pinned": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether starting the whole project starts this agent. Set to false to leave it out; it stays in the list and can still be started on its own."
           }
         }
       }

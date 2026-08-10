@@ -8,11 +8,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, afterEach, before, describe, it } from 'node:test';
 import { URI } from 'vscode-uri';
+import type { RunningAgent } from '../types.js';
 import {
   CONFIG_RELATIVE,
   addAgentToConfig,
   hasConfig,
+  inProjectOrder,
+  type AgentSpec,
+  isPinned,
   openableConfigUri,
+  pinnedAgents,
   readConfig,
   removeAgentFromConfig,
   reorderAgents,
@@ -248,6 +253,139 @@ describe('editing one agent', () => {
     assert.equal(
       await updateAgentInConfig(root, { cli: 'claude', folder: 'a' }, { cli: 'codex', folder: 'a' }),
       false,
+    );
+  });
+});
+
+/**
+ * Which agents the project's start button brings up. Four agents in a project
+ * is not four you want every time, so a row can be left out of the set without
+ * leaving the list.
+ */
+describe('pins', () => {
+  it('counts an agent in unless it says otherwise', () => {
+    assert.equal(isPinned({ folder: '.', cli: 'claude' }), true);
+    assert.equal(isPinned({ folder: '.', cli: 'claude', pinned: true }), true);
+    assert.equal(isPinned({ folder: '.', cli: 'claude', pinned: false }), false);
+  });
+
+  it('keeps the order the project file has them in', () => {
+    const agents: AgentSpec[] = [
+      { folder: 'api', cli: 'claude' },
+      { folder: 'docs', cli: 'claude', pinned: false },
+      { folder: 'web', cli: 'codex' },
+    ];
+
+    assert.deepEqual(
+      pinnedAgents({ agents }).map((spec) => spec.folder),
+      ['api', 'web'],
+    );
+  });
+
+  // A project written before pins existed starts everything, which is what it
+  // did before — nothing has to be pinned for the button to work.
+  it('starts everything in a config that says nothing about pins', async () => {
+    await put('cli-grid.json', '{ "agents": [{ "cli": "claude" }, { "cli": "codex" }] }');
+
+    assert.equal(pinnedAgents(await readConfig(root)).length, 2);
+  });
+
+  it('survives a round trip through the file', async () => {
+    await writeConfig(root, {
+      agents: [
+        { folder: '.', cli: 'claude' },
+        { folder: 'docs', cli: 'codex', pinned: false },
+      ],
+    });
+
+    const config = await readConfig(root);
+    assert.equal(config?.agents[0]?.pinned, undefined, 'the ordinary case stays unwritten');
+    assert.equal(config?.agents[1]?.pinned, false);
+  });
+});
+
+describe('inProjectOrder', () => {
+  const project = (uri: URI, agents: AgentSpec[]) => ({ uri, config: { agents } });
+
+  /** Only the fields the ordering reads; the rest of an agent is irrelevant. */
+  const running = (id: string, uri: URI, folder: string, cli: string) =>
+    ({ id, root: uri, folderRef: folder, profileId: cli }) as unknown as RunningAgent;
+
+  const other = URI.file('/home/dev/other');
+
+  // The bug this exists for: clicking a split re-arranged the panes into the
+  // order the agents happened to have been started in, throwing away the order
+  // the list was dragged into.
+  it('follows the project file rather than the order they started in', () => {
+    const config = [
+      { cli: 'claude', folder: 'a' },
+      { cli: 'claude', folder: 'b' },
+      { cli: 'claude', folder: 'c' },
+    ];
+    const started = [
+      running('2', root, 'c', 'claude'),
+      running('3', root, 'a', 'claude'),
+      running('1', root, 'b', 'claude'),
+    ];
+
+    assert.deepEqual(
+      inProjectOrder([project(root, config)], started).map((agent) => agent.folderRef),
+      ['a', 'b', 'c'],
+    );
+  });
+
+  it('leaves out the agents in the file that are not running', () => {
+    const config = [
+      { cli: 'claude', folder: 'a' },
+      { cli: 'claude', folder: 'b' },
+    ];
+    const started = [running('1', root, 'b', 'claude')];
+
+    assert.deepEqual(inProjectOrder([project(root, config)], started).map((a) => a.id), ['1']);
+  });
+
+  // An agent launched without being saved has no place in the file to sit in,
+  // and dropping it would leave its pane out of the arrangement entirely.
+  it('keeps an ad-hoc agent, after the ones that are written down', () => {
+    const started = [
+      running('adhoc', root, 'z', 'claude'),
+      running('saved', root, 'a', 'claude'),
+    ];
+
+    assert.deepEqual(
+      inProjectOrder([project(root, [{ cli: 'claude', folder: 'a' }])], started).map((a) => a.id),
+      ['saved', 'adhoc'],
+    );
+  });
+
+  it('takes the projects in turn, so one window of two stays grouped', () => {
+    const started = [
+      running('2', other, 'a', 'claude'),
+      running('1', root, 'a', 'claude'),
+    ];
+    const projects = [
+      project(root, [{ cli: 'claude', folder: 'a' }]),
+      project(other, [{ cli: 'claude', folder: 'a' }]),
+    ];
+
+    assert.deepEqual(inProjectOrder(projects, started).map((a) => a.id), ['1', '2']);
+  });
+
+  // Same folder, different CLIs: distinct agents, and the file says which pane
+  // each one gets.
+  it('tells two CLIs in one folder apart', () => {
+    const config = [
+      { cli: 'codex', folder: 'a' },
+      { cli: 'claude', folder: 'a' },
+    ];
+    const started = [
+      running('claude', root, 'a', 'claude'),
+      running('codex', root, 'a', 'codex'),
+    ];
+
+    assert.deepEqual(
+      inProjectOrder([project(root, config)], started).map((a) => a.id),
+      ['codex', 'claude'],
     );
   });
 });

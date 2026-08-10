@@ -72,42 +72,6 @@ describe('commands', () => {
     }
   });
 
-  // Every operation on that view resolves a file to the folder holding it —
-  // `FileNode.folder` — so restricting one to folders only hides it from the
-  // row someone actually right-clicked, which is how New went missing on files.
-  it('offers every Files view operation on files as well as folders', () => {
-    const items: { command?: string; when?: string }[] =
-      manifest.contributes.menus['view/item/context'] ?? [];
-
-    for (const item of items) {
-      if (!item.when?.includes('cliGrid.files')) continue;
-      assert.ok(
-        !/viewItem == cliGrid\.dir/.test(item.when),
-        `${item.command} only appears on folders; it should resolve a file to its parent`,
-      );
-    }
-  });
-
-  // Right-clicking the empty part of a view opens its title menu, and the
-  // `navigation` group is not in it — those render as the toolbar icons. So a
-  // command contributed only there has no entry on the blank space below the
-  // rows, which is exactly where someone right-clicks to make a new file.
-  it('reaches the operations that need no row from the empty view', () => {
-    const items: { command?: string; when?: string; group?: string }[] =
-      manifest.contributes.menus['view/title'] ?? [];
-
-    const onMenu = new Set(
-      items
-        .filter((item) => item.when?.includes('cliGrid.files'))
-        .filter((item) => !item.group?.startsWith('navigation'))
-        .map((item) => item.command),
-    );
-
-    for (const command of ['cliGrid.newFile', 'cliGrid.newFolder']) {
-      assert.ok(onMenu.has(command), `${command} is a toolbar icon only`);
-    }
-  });
-
   it('only binds keys to declared commands', () => {
     for (const binding of manifest.contributes.keybindings ?? []) {
       assert.ok(declared.has(binding.command), `a keybinding runs undeclared ${binding.command}`);

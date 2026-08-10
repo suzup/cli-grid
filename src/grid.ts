@@ -69,10 +69,13 @@ export class EditorGrid implements vscode.Disposable {
    */
   async applyPreset(preset: LayoutPreset, adoptFiles = false): Promise<void> {
     const filePane = Boolean(filePaneGroup()) || (adoptFiles && hasFileTabs());
+    const column = paneCount(preset) + 1;
+
     this.arranging = true;
     try {
+      const files = filePane ? await this.takeFiles(column) : [];
       await this.setLayout(preset, filePane);
-      if (filePane) await this.gatherFiles(paneCount(preset) + 1);
+      await this.putFiles(files, column);
     } finally {
       this.arranging = false;
     }
@@ -93,6 +96,10 @@ export class EditorGrid implements vscode.Disposable {
 
     this.arranging = true;
     try {
+      // Files first and out of the way: which group they are in must not have a
+      // say in where the panes end up.
+      const files = filePane ? await this.takeFiles(panes + 1) : [];
+
       for (const terminal of terminals) await moveToGroup(terminal, 1);
       await this.setLayout(preset, filePane);
 
@@ -104,9 +111,7 @@ export class EditorGrid implements vscode.Disposable {
         }
       }
 
-      // Gathering terminals can collapse the group the files were in, so they
-      // are put back only once the grid is settled.
-      if (filePane) await this.gatherFiles(panes + 1);
+      await this.putFiles(files, panes + 1);
     } finally {
       this.arranging = false;
     }
@@ -147,31 +152,55 @@ export class EditorGrid implements vscode.Disposable {
   }
 
   /**
-   * Moves stray file editors into the file pane.
+   * Closes the file editors, so the split can be applied without them, and
+   * hands back what to re-open once it has been.
    *
    * Re-splitting maps the old groups onto the new ones by position, so a file
-   * that was beside a 2 x 2 lands inside a 3 x 2. Terminals are left alone —
-   * they are placed by `arrange`.
+   * that was beside a 2 x 2 lands inside a 3 x 2 and has to be fetched back
+   * out. Moving it looked like the way to do that, and was — but the workbench
+   * closes a group the moment its last editor leaves it, and every pane after
+   * that one shifts up by one. Re-opening a folder is where that showed:
+   * the files the workbench had restored were sitting in what were about to be
+   * agent panes, gathering them cost the grid a pane for each group they came
+   * from, and the agents launched straight afterwards each landed a pane over
+   * from the one their position in the list had asked for.
+   *
+   * Closing first leaves the shape of the editor area to `setEditorLayout`
+   * alone, which is the one thing that gets it right. Nothing is done at all
+   * when the files are already where they belong, and a dirty editor is left
+   * where it is — no arrangement is worth a save prompt.
    */
-  private async gatherFiles(column: number): Promise<void> {
-    for (const group of vscode.window.tabGroups.all) {
-      if (group.viewColumn >= column) continue;
+  private async takeFiles(column: number): Promise<vscode.Uri[]> {
+    const open = vscode.window.tabGroups.all.flatMap((group) =>
+      group.tabs.filter((tab) => fileOf(tab)).map((tab) => ({ group, tab })),
+    );
+    if (!open.length) return [];
 
-      for (const tab of [...group.tabs]) {
-        const uri = fileOf(tab);
-        if (!uri) continue;
-        // Opening it where it already is just makes it the active editor, which
-        // is what `moveActiveEditor` needs.
-        await vscode.commands.executeCommand('vscode.open', uri, {
-          viewColumn: group.viewColumn,
-          preview: false,
-        });
-        await vscode.commands.executeCommand('moveActiveEditor', {
-          to: 'position',
-          by: 'group',
-          value: column,
-        });
-      }
+    // Already one file pane, at the column it is about to be at: re-splitting
+    // will leave them alone, so there is nothing to take.
+    if (
+      vscode.window.tabGroups.all.length === column &&
+      open.every(({ group }) => group.viewColumn === column)
+    ) {
+      return [];
+    }
+
+    const movable = open.filter(({ tab }) => !tab.isDirty);
+    if (!movable.length) return [];
+
+    const uris = movable.flatMap(({ tab }) => fileOf(tab) ?? []);
+    await vscode.window.tabGroups.close(movable.map(({ tab }) => tab), true);
+    return uris;
+  }
+
+  /** The other half: back into the file pane, in the order they were in. */
+  private async putFiles(uris: readonly vscode.Uri[], column: number): Promise<void> {
+    for (const uri of uris) {
+      await vscode.commands.executeCommand('vscode.open', uri, {
+        viewColumn: column,
+        preview: false,
+        preserveFocus: true,
+      });
     }
   }
 

@@ -11,6 +11,7 @@ import {
   resolveLayout,
   rowsOf,
   toSpec,
+  type GroupSpec,
 } from '../layout.js';
 
 const grid2x2 = presetById('grid-2x2')!;
@@ -92,6 +93,27 @@ describe('toSpec', () => {
   it('leaves the file pane last, which is how the grid finds it again', () => {
     const spec = toSpec(presetById('grid-3x2')!, true);
     assert.equal(spec.groups.at(-1)?.size, FILE_PANE_SIZE);
+  });
+
+  // The count is what everything downstream is built on: the file pane is
+  // `paneCount + 1`, and `columnFor` hands agents the panes before it. A spec
+  // that describes one pane fewer than it claims sends every agent a pane over.
+  it('describes exactly as many groups as the preset has panes', () => {
+    const leaves = (groups: readonly GroupSpec[]): number =>
+      groups.reduce((total, group) => total + (group.groups ? leaves(group.groups) : 1), 0);
+
+    for (const preset of LAYOUT_PRESETS) {
+      assert.equal(
+        leaves(toSpec(preset, false).groups),
+        paneCount(preset),
+        `${preset.id} on its own`,
+      );
+      assert.equal(
+        leaves(toSpec(preset, true).groups),
+        paneCount(preset) + 1,
+        `${preset.id} beside the file pane`,
+      );
+    }
   });
 
   it('gives every pane an equal share of its row', () => {

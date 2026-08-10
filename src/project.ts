@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { exists, join } from './paths.js';
-import type { LaunchMode } from './types.js';
+import type { LaunchMode, RunningAgent } from './types.js';
 
 /**
  * Config lives inside the folder it describes, the same way `.vscode/settings.json`
@@ -31,6 +31,15 @@ export interface AgentSpec {
   mode?: LaunchMode;
   /** Shown instead of the folder name, for when that is not distinct enough. */
   name?: string;
+  /**
+   * Whether starting the whole project starts this one. Absent means yes.
+   *
+   * Written down only when it is `false`, so a project file says which agents
+   * were deliberately left out rather than restating the ordinary case for
+   * every entry — and a file written before this existed still starts
+   * everything, which is what it used to do.
+   */
+  pinned?: boolean;
 }
 
 export interface ProjectConfig {
@@ -93,6 +102,7 @@ export async function readConfig(root: vscode.Uri): Promise<ProjectConfig | unde
           cli: a.cli,
           ...(a.mode ? { mode: a.mode } : {}),
           ...(a.name?.trim() ? { name: a.name.trim() } : {}),
+          ...(a.pinned === false ? { pinned: false } : {}),
         })),
     };
   } catch (err) {
@@ -137,6 +147,63 @@ export async function updateConfig(
  */
 export function sameAgent(a: AgentSpec, b: AgentSpec): boolean {
   return a.folder === b.folder && a.cli === b.cli;
+}
+
+/**
+ * Whether starting the project starts this agent.
+ *
+ * Four agents in a project does not mean four you want up every time — one is
+ * often a repository you only look at now and then, and having it launch with
+ * the rest costs a pane and a CLI session. Un-pinning leaves it in the list,
+ * in its place in the order, startable on its own.
+ *
+ * Pinned unless it says otherwise, so nothing has to be pinned before the
+ * button works and a project file that predates this behaves as it did.
+ */
+export function isPinned(spec: AgentSpec): boolean {
+  return spec.pinned !== false;
+}
+
+/** The agents `startAll` would launch, in the order they are written down. */
+export function pinnedAgents(config: ProjectConfig | undefined): AgentSpec[] {
+  return (config?.agents ?? []).filter(isPinned);
+}
+
+/**
+ * Running agents in the order their project file lists them, with anything not
+ * written down after them.
+ *
+ * That order is the one the Agents view shows and the one `startAll` hands out
+ * panes in, so dragging a row is how a user says which pane an agent belongs
+ * in. Anything that arranges the panes has to ask the same question — the order
+ * agents happen to have been launched in is not an answer to it.
+ */
+export function inProjectOrder(
+  projects: readonly { uri: vscode.Uri; config: ProjectConfig }[],
+  running: readonly RunningAgent[],
+): RunningAgent[] {
+  const ordered: RunningAgent[] = [];
+  const placed = new Set<string>();
+
+  for (const project of projects) {
+    for (const spec of project.config.agents) {
+      const agent = running.find(
+        (candidate) =>
+          !placed.has(candidate.id) &&
+          candidate.root.toString() === project.uri.toString() &&
+          candidate.folderRef === spec.folder &&
+          candidate.profileId === spec.cli,
+      );
+      if (!agent) continue;
+      placed.add(agent.id);
+      ordered.push(agent);
+    }
+  }
+
+  // Ad-hoc agents, and any project that has gone away since one was launched.
+  for (const agent of running) if (!placed.has(agent.id)) ordered.push(agent);
+
+  return ordered;
 }
 
 export async function addAgentToConfig(

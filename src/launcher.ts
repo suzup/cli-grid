@@ -14,13 +14,16 @@ import {
   CONFIG_RELATIVE,
   addAgentToConfig,
   hasConfig,
+  isPinned,
   pickProjectFolder,
+  pinnedAgents,
   removeAgentFromConfig,
   updateAgentInConfig,
   type AgentSpec,
   type ProjectWatcher,
 } from './project.js';
 import type { AgentRegistry } from './registry.js';
+import type { WorkspaceRoots } from './roots.js';
 import { agentLabel, nameFor, type AgentNode } from './tree.js';
 import type { AgentProfile, LaunchMode } from './types.js';
 
@@ -33,6 +36,7 @@ export class Launcher {
     private readonly registry: AgentRegistry,
     private readonly grid: EditorGrid,
     private readonly context: vscode.ExtensionContext,
+    private readonly roots: WorkspaceRoots,
   ) {}
 
   /**
@@ -68,6 +72,10 @@ export class Launcher {
       return;
     }
     await this.projects.refresh();
+
+    // Before it launches, so the CLI's first output lands in a window that
+    // already has the folder — Source Control and the Explorer included.
+    await this.roots.add(folder);
 
     if (first) {
       void vscode.window.showInformationMessage(
@@ -143,12 +151,16 @@ export class Launcher {
   }
 
   /**
-   * Starts every configured agent, laying the panes out first so each one opens
+   * Starts the pinned agents, laying the panes out first so each one opens
    * where it belongs instead of stacking as tabs in the active group.
+   *
+   * The pins are the whole answer to "which of these come up together": the
+   * split is sized for them, and the panes are handed out in their order, so an
+   * un-pinned agent does not leave a gap in the grid.
    */
   async startAll(root: vscode.Uri, modeOverride?: LaunchMode): Promise<void> {
     const config = this.projects.configFor(root);
-    const specs = config?.agents ?? [];
+    const specs = pinnedAgents(config);
     if (!specs.length) return;
 
     const preset = resolveLayout(config?.layout, specs.length);
@@ -265,11 +277,38 @@ export class Launcher {
     await this.projects.refresh();
   }
 
+  /**
+   * Takes an agent in or out of what the project's start button starts.
+   *
+   * Nothing happens to it right now — an agent that is up stays up, and one
+   * that is down stays down. The pin is about the next time the lot of them are
+   * started, which is why it is a toggle on the row rather than a kind of stop.
+   */
+  async setPinned(node: AgentNode, pinned: boolean): Promise<void> {
+    if (node.adHoc) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t('Save this agent to the project before changing it.'),
+      );
+      return;
+    }
+    if (isPinned(node.spec) === pinned) return;
+
+    const next: AgentSpec = { ...node.spec };
+    if (pinned) delete next.pinned;
+    else next.pinned = false;
+
+    await updateAgentInConfig(node.root, node.spec, next);
+    await this.projects.refresh();
+  }
+
   async removeAgent(node: AgentNode): Promise<void> {
     const running = this.registry.find(node.root, node.spec.folder, node.spec.cli);
     if (running) this.registry.stop(running.id);
     await removeAgentFromConfig(node.root, node.spec);
     await this.projects.refresh();
+    // After the config, so the folder leaving the window finds nothing left to
+    // ask the user about.
+    await this.roots.remove(node.folder);
   }
 
   /** Writes an ad-hoc agent into the project config so it comes back next time. */

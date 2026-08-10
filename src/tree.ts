@@ -2,7 +2,13 @@ import * as vscode from 'vscode';
 import type { GitStatus } from './git.js';
 import { basename, resolveFolder } from './paths.js';
 import { effectiveMode, findProfile } from './profiles.js';
-import { reorderAgents, sameAgent, type AgentSpec, type ProjectWatcher } from './project.js';
+import {
+  isPinned,
+  reorderAgents,
+  sameAgent,
+  type AgentSpec,
+  type ProjectWatcher,
+} from './project.js';
 import type { AgentRegistry } from './registry.js';
 import type { RunningAgent } from './types.js';
 
@@ -189,7 +195,15 @@ export class AgentsTreeProvider
       : mode === 'resume'
         ? vscode.l10n.t('stopped · starts resumed')
         : vscode.l10n.t('stopped');
-    item.description = [cli, state, node.adHoc ? vscode.l10n.t('unsaved') : '']
+    // An un-pinned agent is easy to forget about and then wonder why the start
+    // button skipped it, so the row says so at rest rather than only on hover.
+    const pinned = isPinned(node.spec);
+    item.description = [
+      cli,
+      state,
+      pinned || node.adHoc ? '' : vscode.l10n.t('manual only'),
+      node.adHoc ? vscode.l10n.t('unsaved') : '',
+    ]
       .filter(Boolean)
       .join('  ·  ');
 
@@ -200,12 +214,14 @@ export class AgentsTreeProvider
         )
       : new vscode.ThemeIcon('debug-start', new vscode.ThemeColor('disabledForeground'));
 
-    // The suffix decides which of the two start buttons this row shows.
-    item.contextValue = node.running
+    // The suffix decides which of the two start buttons this row shows, and the
+    // last segment which way round the pin points.
+    const kind = node.running
       ? node.adHoc
         ? 'cliGrid.agent.running.adhoc'
         : 'cliGrid.agent.running'
       : `cliGrid.agent.stopped.${mode}`;
+    item.contextValue = node.adHoc ? kind : `${kind}.${pinned ? 'pinned' : 'unpinned'}`;
 
     const git = this.git.describe(node.folder);
     item.tooltip = new vscode.MarkdownString(
@@ -217,6 +233,7 @@ export class AgentsTreeProvider
         // path lives — two agents can easily be in folders both called "api".
         `${vscode.l10n.t('Folder')}: ${node.folder.fsPath}`,
         git ? `${vscode.l10n.t('Branch')}: \`${git}\`` : '',
+        pinned || node.adHoc ? '' : vscode.l10n.t('Starting the project skips this one.'),
         node.running
           ? `${vscode.l10n.t('Started')}: ${new Date(node.running.startedAt).toLocaleTimeString()}`
           : vscode.l10n.t('Select to start'),

@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import * as vscode from 'vscode';
 import { EditorGrid } from '../grid.js';
-import { paneCount, presetById } from '../layout.js';
+import { columnFor, paneCount, presetById } from '../layout.js';
+import { AgentRegistry } from '../registry.js';
 
 /**
  * What the editor area actually does, in a real workbench.
@@ -213,6 +214,146 @@ describe('arranging agents', () => {
     await settle('one per pane', () => terminalColumns().join() === '1,2,3,4');
 
     grid.dispose();
+  });
+});
+
+/**
+ * Closing an agent's pane is how most agents are stopped, and the row in the
+ * view is only ever as right as the registry behind it. The event that says a
+ * terminal has gone was seen to go missing — leaving a row claiming to be
+ * running with nothing behind it — so this asks the registry the same question
+ * the view does, in a real workbench, after really closing the tab.
+ */
+/**
+ * `startAll` is the button you press after reopening a folder, and it launches
+ * the whole list in one go. The order it hands panes out in is the order of the
+ * Agents view — that is the whole reason rows can be dragged — so this checks
+ * the agents actually land where they were told to, rather than in whatever
+ * order the workbench got round to opening them.
+ */
+describe('starting every agent at once', () => {
+  it('puts each one in the pane its position asks for', async () => {
+    const grid = new EditorGrid();
+    const preset = presetById('grid-2x2')!;
+
+    await grid.applyPreset(preset);
+    await settle('four groups', () => groups().length === 4);
+    await grid.unlockAll();
+
+    // Exactly what `startAll` does: created in one pass, each naming its group,
+    // with nothing awaited in between.
+    const names = ['first', 'second', 'third', 'fourth'];
+    for (const [index, name] of names.entries()) {
+      terminals.push(
+        vscode.window.createTerminal({
+          name,
+          location: { viewColumn: columnFor(index, preset) },
+        }),
+      );
+    }
+
+    await settle('four terminals', () => terminalCount() === 4);
+    await quiet();
+
+    assert.deepEqual(terminalColumns(), [1, 2, 3, 4], `stacked: ${layout()}`);
+    assert.deepEqual(
+      groups().map((group) => group.tabs.map((tab) => tab.label).join()),
+      names,
+      `out of order: ${layout()}`,
+    );
+
+    grid.dispose();
+  });
+
+  // Reopening a folder is the case: the workbench brings back the files that
+  // were open, so the grid comes up beside a file pane and with locking on.
+  it('does the same beside a restored file pane', async () => {
+    await lockPanes(true);
+    const grid = new EditorGrid();
+    const preset = presetById('grid-2x2')!;
+
+    await vscode.commands.executeCommand('vscode.open', await file('restored.ts'));
+    await settle('the restored file', () => Boolean(fileGroup('restored.ts')));
+
+    // What `restore()` does on startup, then what `startAll` does.
+    await grid.applyPreset(preset, true);
+    await settle('the grid and its file pane', () => groups().length === 5, 8000);
+    assert.equal(fileGroup('restored.ts')?.viewColumn, 5, `file misplaced: ${layout()}`);
+    await grid.unlockAll();
+
+    const names = ['one', 'two', 'three', 'four'];
+    for (const [index, name] of names.entries()) {
+      terminals.push(
+        vscode.window.createTerminal({
+          name,
+          location: { viewColumn: columnFor(index, preset) },
+        }),
+      );
+    }
+
+    await settle('four terminals', () => terminalCount() === 4);
+    await quiet();
+
+    assert.deepEqual(terminalColumns(), [1, 2, 3, 4], `stacked: ${layout()}`);
+    assert.deepEqual(
+      groups().slice(0, 4).map((group) => group.tabs.map((tab) => tab.label).join()),
+      names,
+      `out of order: ${layout()}`,
+    );
+
+    grid.dispose();
+    await lockPanes(false);
+  });
+});
+
+describe('closing an agent pane', () => {
+  const profile = {
+    id: 'test-cli',
+    label: 'Test CLI',
+    command: 'true',
+    args: { new: [], resume: [] },
+    icon: 'terminal',
+  };
+
+  const launch = (registry: AgentRegistry) =>
+    registry.launch(profile, 'new', {
+      root: vscode.Uri.file(dir),
+      folderRef: '.',
+      folder: vscode.Uri.file(dir),
+      viewColumn: 1,
+    });
+
+  it('stops counting the agent whose tab was closed', async () => {
+    const registry = new AgentRegistry();
+    const agent = launch(registry);
+    terminals.push(agent.terminal);
+
+    agent.terminal.show(false);
+    await settle('the terminal', () => terminalCount() === 1);
+    assert.equal(registry.list().length, 1, 'the agent should be up to begin with');
+
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    await settle('the closed pane', () => terminalCount() === 0);
+    await settle('the registry to agree', () => registry.list().length === 0);
+
+    registry.dispose();
+  });
+
+  it('keeps one whose pane is merely not the active one', async () => {
+    const registry = new AgentRegistry();
+    const agent = launch(registry);
+    terminals.push(agent.terminal);
+
+    agent.terminal.show(false);
+    await settle('the terminal', () => terminalCount() === 1);
+
+    // A second editor takes the focus; nothing has closed.
+    await vscode.commands.executeCommand('vscode.open', await file('bystander.ts'));
+    await settle('the file', () => Boolean(fileGroup('bystander.ts')));
+
+    assert.equal(registry.list().length, 1, 'the agent was dropped while still running');
+
+    registry.dispose();
   });
 });
 

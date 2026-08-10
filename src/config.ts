@@ -16,8 +16,6 @@ export const DEFAULTS = {
   defaultMode: 'new' as LaunchMode,
   launchStrategy: 'shell' as 'shell' | 'exec',
   autoStart: false,
-  revealOnFocus: true,
-  showHiddenFiles: false,
   lockAgentPanes: true,
 };
 
@@ -27,28 +25,9 @@ export function setting<K extends keyof Settings>(name: K): Settings[K] {
   return vscode.workspace.getConfiguration(SECTION).get<Settings[K]>(name, DEFAULTS[name]);
 }
 
-export function updateSetting<K extends keyof Settings>(
-  name: K,
-  value: Settings[K],
-): Thenable<void> {
-  return vscode.workspace
-    .getConfiguration(SECTION)
-    .update(name, value, vscode.ConfigurationTarget.Global);
-}
-
 /** Free-form, so it sits outside `DEFAULTS` rather than pretending to a shape. */
 export function profileOverrides(): Record<string, ProfileOverride> {
   return vscode.workspace
     .getConfiguration(SECTION)
     .get<Record<string, ProfileOverride>>('profiles', {});
-}
-
-/**
- * The workbench's own delete confirmation.
- *
- * Not ours to redeclare: someone who has turned it off in the Explorer does not
- * want to be asked again in a view that behaves like one.
- */
-export function confirmDelete(): boolean {
-  return vscode.workspace.getConfiguration('explorer').get<boolean>('confirmDelete', true);
 }

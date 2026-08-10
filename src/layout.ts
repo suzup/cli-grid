@@ -67,8 +67,25 @@ export interface LayoutSpec {
 export function toSpec(preset: LayoutPreset, filePane: boolean): LayoutSpec {
   if (!filePane) return { orientation: 1, groups: rowsOf(preset) };
 
-  // One level up: columns, the grid in the first and the files in the second.
-  // The grid's own rows and columns then fall out the same way as above.
+  // A grid that is a single row is already a row of columns, and the file pane
+  // is one more column beside it, so the two go in flat. Wrapping them instead
+  // — a column holding a row holding columns — asks for two levels that both
+  // split the same way, and the workbench flattens that back out, losing a
+  // pane: 2 x 1 came out as one pane and 3 x 1 as one as well.
+  const columns = preset.rows.length === 1 ? preset.rows[0] ?? 1 : 0;
+  if (columns) {
+    return {
+      orientation: 0,
+      groups: [
+        ...Array.from({ length: columns }, () => ({ size: (1 - FILE_PANE_SIZE) / columns })),
+        { size: FILE_PANE_SIZE },
+      ],
+    };
+  }
+
+  // More than one row, so the levels genuinely alternate: columns at the top,
+  // the grid in the first and the files in the second, and the grid's own rows
+  // and columns fall out the same way as above.
   return {
     orientation: 0,
     groups: [

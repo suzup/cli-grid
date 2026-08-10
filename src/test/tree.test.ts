@@ -84,6 +84,33 @@ describe('the row itself', () => {
     assert.ok(String(item.description).startsWith('no-such-cli'));
   });
 
+  // The pin is an inline button, so it only shows on hover — the row has to
+  // say at rest that the start button will skip it, or it looks broken.
+  it('says so on its face when the project start would skip it', () => {
+    const item = provider().getTreeItem(node({ cli: 'claude', folder: 'api', pinned: false }));
+
+    assert.ok(String(item.description).includes('manual only'), String(item.description));
+    assert.ok(
+      String((item.tooltip as { value?: string })?.value).includes('skips this one'),
+    );
+  });
+
+  it('says nothing about pins on an agent that starts with the rest', () => {
+    const item = provider().getTreeItem(node({ cli: 'claude', folder: 'api' }));
+    assert.ok(!String(item.description).includes('manual only'));
+  });
+
+  // Which way round the pin points is what the two menu entries key off, so the
+  // context value has to carry it — and still start with what it used to, since
+  // the start and stop buttons match on that.
+  it('carries the pin in the context value', () => {
+    const on = provider().getTreeItem(node({ cli: 'claude', folder: 'api' }));
+    const off = provider().getTreeItem(node({ cli: 'claude', folder: 'api', pinned: false }));
+
+    assert.equal(on.contextValue, 'cliGrid.agent.stopped.new.pinned');
+    assert.equal(off.contextValue, 'cliGrid.agent.stopped.new.unpinned');
+  });
+
   it('keeps the whole path in the hover, since the label is only a segment', () => {
     const item = provider().getTreeItem(node({ cli: 'claude', folder: 'services/api' }));
     const tooltip = String((item.tooltip as { value?: string })?.value);
