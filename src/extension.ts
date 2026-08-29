@@ -5,6 +5,7 @@ import { GitStatus } from './git.js';
 import { EditorGrid } from './grid.js';
 import { Launcher } from './launcher.js';
 import { LayoutController, LayoutTreeProvider } from './layouts.js';
+import { ImageLinks } from './links.js';
 import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
@@ -25,6 +26,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const layoutView = new LayoutTreeProvider();
   const layouts = new LayoutController(layoutView, grid, registry, projects);
   const statusBar = new StatusBar(projects, registry);
+  const links = new ImageLinks(registry, grid);
 
   context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar);
 
@@ -34,6 +36,9 @@ export function activate(context: vscode.ExtensionContext): void {
     // Explorer, Source Control and quick open all reach it without CLI Grid
     // standing in for any of them.
     projects.onDidChange(() => void roots.sync()),
+    // The paths an agent prints are the window's files, and a pane three
+    // columns wide is where a CLI breaks one in half.
+    vscode.window.registerTerminalLinkProvider(links),
     vscode.window.createTreeView('cliGrid.layout', { treeDataProvider: layoutView }),
     vscode.window.createTreeView('cliGrid.agents', {
       treeDataProvider: tree,

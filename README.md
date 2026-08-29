@@ -63,6 +63,12 @@ up again tomorrow.
   locked, so a file — from the Explorer, quick open, or go to definition — lands
   in one pane of its own next to the grid. They are ordinary editors: drag the
   tab where you want it, or split it.
+- **The image an agent names, opened by clicking it.** A pane a third of the
+  window wide is narrower than the paths a CLI prints, so it wraps them itself
+  and the workbench is left with two halves of a name, neither of which is a
+  file — on WSL that ends as a Windows dialog saying the file cannot be found.
+  Clicking either half opens the image beside the grid: the piece on the line
+  is the start or the end of a real path, and that is enough to find it.
 
 ## How it is configured
 

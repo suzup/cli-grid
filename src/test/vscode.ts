@@ -40,6 +40,8 @@ export const state = {
   /** What the code offered the user, and which button a test wants pressed. */
   prompts: [] as string[],
   answer: undefined as string | undefined,
+  /** The last list the code put in front of the user, newest last. */
+  picks: [] as { label: string }[][],
 };
 
 export function reset(): void {
@@ -50,6 +52,7 @@ export function reset(): void {
   state.folders.length = 0;
   state.prompts.length = 0;
   state.answer = undefined;
+  state.picks.length = 0;
   folderChanges.dispose();
 }
 
@@ -140,6 +143,16 @@ const ask = (message: string, ...rest: unknown[]) => {
   return Promise.resolve(buttons.find((button) => button === state.answer));
 };
 
+/**
+ * Records the list and picks the item a test named through `state.answer`.
+ * Nothing picked is a user pressing escape, which callers have to handle.
+ */
+const pick = <T extends { label: string }>(items: T[] | Promise<T[]>) =>
+  Promise.resolve(items).then((list) => {
+    state.picks.push(list);
+    return list.find((item) => item.label === state.answer);
+  });
+
 const folderChanges = new EventEmitter<{
   added: readonly unknown[];
   removed: readonly unknown[];
@@ -201,6 +214,7 @@ const members: Record<string, unknown> = {
   },
   window: {
     showInformationMessage: record,
+    showQuickPick: pick,
     showWarningMessage: ask,
     showErrorMessage: record,
     activeTerminal: undefined,
@@ -209,6 +223,7 @@ const members: Record<string, unknown> = {
     onDidCloseTerminal: never,
     tabGroups: { all: [], onDidChangeTabs: never },
     createTreeView: () => ({ selection: [], description: undefined, dispose() {} }),
+    registerTerminalLinkProvider: () => noop,
     createStatusBarItem: () => ({ show() {}, hide() {}, dispose() {} }),
   },
   commands: {

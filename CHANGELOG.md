@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Image paths in an agent's terminal are clickable**, including the ones the
+  CLI broke over two lines to fit the pane. Neither half of a wrapped path is a
+  file, so the workbench used to hand it to the operating system to open — which
+  in a WSL window means a Linux path given to Windows, and a dialog saying the
+  file cannot be found. The halves are matched back against the file system and
+  the image opens in the pane beside the grid; where a piece names more than one
+  file, CLI Grid asks rather than picking.
+
 ## 0.1.0 — 2026-08-07
 
 First release.

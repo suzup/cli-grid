@@ -63,5 +63,8 @@
   "Remove these agents from this project too? {0}": "이 에이전트들도 이 프로젝트에서 제거할까요? {0}",
   "Their settings go with them. The folders themselves are untouched.": "설정도 함께 사라집니다. 폴더 자체는 그대로 있습니다.",
   "manual only": "수동 시작만",
-  "Starting the project skips this one.": "전체 시작에서 제외된 에이전트입니다."
+  "Starting the project skips this one.": "전체 시작에서 제외된 에이전트입니다.",
+  "Open the image": "이미지 열기",
+  "CLI Grid could not find an image named {0}.": "{0} 이라는 이미지를 찾지 못했습니다.",
+  "CLI Grid — which image?": "CLI Grid — 어느 이미지?"
 }
