@@ -218,6 +218,53 @@ describe('arranging agents', () => {
 });
 
 /**
+ * A switch is meant to cost a tab coming forward, not a rebuild — the grid is
+ * left alone whenever the group arriving fills it, and only a spare pane sends
+ * the outgoing group out of the editor area altogether. Both halves of that are
+ * claims about the workbench: that a pane left holding two agents keeps them
+ * both, and that a running terminal can be taken out and brought back without
+ * being ended. Neither is worth assuming.
+ */
+describe('showing one group at a time', () => {
+  it('leaves the group behind it in place, and parks it only when a pane is spare', async () => {
+    const grid = new EditorGrid();
+
+    const first = await agentTerminal(1, 'group-a-1');
+    const second = await agentTerminal(1, 'group-a-2');
+    const other = await agentTerminal(1, 'group-b-1');
+    await settle('three terminals', () => terminalCount() === 3);
+
+    // Two agents into two panes: every pane is taken, so the group going out
+    // has nowhere it could be seen and stays exactly where it is. This is the
+    // ordinary switch, and the point of it is that nothing is moved out.
+    await grid.showOnly([first, second], [other], presetById('grid-2x1')!);
+
+    await settle('one per pane', () => terminalColumns().join() === '1,2');
+    assert.equal(terminalCount(), 3, 'a switch that covers the grid emptied a pane');
+    assert.equal(vscode.window.activeTerminal, first, 'the group coming in is not in front');
+
+    // One agent into two panes: the spare pane would show the group that just
+    // left, so this time it has to leave the editor area — still running.
+    await grid.showOnly([other], [first, second], presetById('grid-2x1')!);
+
+    await settle('the spare pane to be given up', () => terminalCount() === 1);
+    assert.ok(
+      vscode.window.terminals.includes(first) && vscode.window.terminals.includes(second),
+      'parking closed the terminal',
+    );
+    await settle('the group on screen to have a pane', () => terminalColumns().join() === '1');
+
+    // And back out of the panel, whole.
+    await grid.showOnly([first, second], [other], presetById('grid-2x1')!);
+
+    await settle('the parked group to come back', () => terminalColumns().join() === '1,2');
+    assert.equal(terminalCount(), 3, 'the group that was parked did not all come back');
+
+    grid.dispose();
+  });
+});
+
+/**
  * Closing an agent's pane is how most agents are stopped, and the row in the
  * view is only ever as right as the registry behind it. The event that says a
  * terminal has gone was seen to go missing — leaving a row claiming to be

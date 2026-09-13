@@ -66,5 +66,21 @@
   "Starting the project skips this one.": "전체 시작에서 제외된 에이전트입니다.",
   "Open the image": "이미지 열기",
   "CLI Grid could not find an image named {0}.": "{0} 이라는 이미지를 찾지 못했습니다.",
-  "CLI Grid — which image?": "CLI Grid — 어느 이미지?"
+  "CLI Grid — which image?": "CLI Grid — 어느 이미지?",
+  "This window has one group. Add another folder as a group to switch between them.": "이 창에는 그룹이 하나뿐입니다. 다른 폴더를 그룹으로 추가하면 전환할 수 있습니다.",
+  "{0} configured, {1} running": "설정 {0}개, 실행 중 {1}개",
+  "Which group should the grid show?": "그리드에 어떤 그룹을 띄울까요?",
+  "Add as Group": "그룹으로 추가",
+  "Which folder should become a group?": "어떤 폴더를 그룹으로 추가할까요?",
+  "That folder is already a group in this window.": "그 폴더는 이미 이 창의 그룹입니다.",
+  "Could not add {0} as a group: {1}": "{0}을(를) 그룹으로 추가하지 못했습니다: {1}",
+  "This is the folder the window was opened on, so it stays.": "이 창을 연 폴더라서 뺄 수 없습니다.",
+  "Take the group {0} out of this window?": "그룹 {0}을(를) 이 창에서 뺄까요?",
+  "Its agents stop. The folder and its settings are untouched, and adding it again brings them back.": "실행 중인 에이전트는 중지됩니다. 폴더와 설정은 그대로라서 다시 추가하면 그대로 돌아옵니다.",
+  "The folder and its settings are untouched, and adding it again brings them back.": "폴더와 설정은 그대로라서 다시 추가하면 그대로 돌아옵니다.",
+  "showing": "표시 중",
+  "{0} running off screen": "화면 밖에서 {0}개 실행 중",
+  "Select to show this group in the grid.": "선택하면 이 그룹을 그리드에 띄웁니다.",
+  "Showing the group {0}": "표시 중인 그룹: {0}",
+  "Show This Group": "이 그룹 보기"
 }

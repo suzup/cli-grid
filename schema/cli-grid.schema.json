@@ -18,6 +18,13 @@
         "grid-4x2"
       ]
     },
+    "groups": {
+      "type": "array",
+      "description": "Other project folders opened beside this one, each its own group with its own agents and split. Only the folder you open is read for this. Absolute, or relative to this folder.",
+      "items": {
+        "type": "string"
+      }
+    },
     "agents": {
       "type": "array",
       "description": "Agents belonging to this folder.",

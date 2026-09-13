@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { GitStatus } from './git.js';
+import type { GroupController } from './groups.js';
 import { basename, resolveFolder } from './paths.js';
 import { effectiveMode, findProfile } from './profiles.js';
 import {
@@ -17,6 +18,12 @@ export class ProjectNode {
   constructor(
     readonly uri: vscode.Uri,
     readonly name: string,
+    /** Whether this is the group the grid is showing. */
+    readonly active: boolean,
+    /** Whether the window has more than one group to choose between. */
+    readonly grouped: boolean,
+    /** Whether it can be taken back out — the folder you opened cannot. */
+    readonly removable: boolean,
   ) {}
 }
 
@@ -75,11 +82,13 @@ export class AgentsTreeProvider
     private readonly projects: ProjectWatcher,
     private readonly registry: AgentRegistry,
     private readonly git: GitStatus,
+    private readonly groups: GroupController,
   ) {
     this.disposables.push(
       projects.onDidChange(() => this.refresh()),
       registry.onDidChange(() => this.refresh()),
       git.onDidChange(() => this.refresh()),
+      groups.onDidChange(() => this.refresh()),
     );
   }
 
@@ -89,7 +98,18 @@ export class AgentsTreeProvider
 
   getChildren(element?: Node): Node[] {
     if (!element) {
-      return this.projects.projects().map((p) => new ProjectNode(p.uri, p.name));
+      const groups = this.groups.list();
+      const entry = groups[0]?.uri.toString();
+      return groups.map(
+        (group) =>
+          new ProjectNode(
+            group.uri,
+            group.name,
+            this.groups.isActive(group.uri),
+            groups.length > 1,
+            group.uri.toString() !== entry,
+          ),
+      );
     }
     if (element.kind === 'project') return this.agentsIn(element.uri);
     return [];
@@ -162,15 +182,67 @@ export class AgentsTreeProvider
     await this.projects.refresh();
   }
 
+  /**
+   * A project row, which is also a group row once there is more than one.
+   *
+   * With a single group there is nothing to switch between, so the row stays
+   * exactly what it was: a folder, expanded, with the git branch beside it. The
+   * dot and the collapsed rows only appear when they mean something.
+   */
   private projectItem(node: ProjectNode): vscode.TreeItem {
-    const item = new vscode.TreeItem(node.name, vscode.TreeItemCollapsibleState.Expanded);
+    const open = node.active || !node.grouped;
+    const item = new vscode.TreeItem(
+      node.name,
+      open ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
+    );
     // A resourceUri lets the built-in git decorations colour this exactly as
     // they colour the Explorer.
     item.resourceUri = node.uri;
-    item.iconPath = new vscode.ThemeIcon('root-folder');
-    item.contextValue = 'cliGrid.project';
-    item.description = this.git.describe(node.uri);
-    item.tooltip = new vscode.MarkdownString(`**${node.name}**\n\n${node.uri.fsPath}`);
+    item.iconPath = node.grouped
+      ? new vscode.ThemeIcon(
+          node.active ? 'circle-filled' : 'circle-outline',
+          new vscode.ThemeColor(node.active ? 'charts.blue' : 'disabledForeground'),
+        )
+      : new vscode.ThemeIcon('root-folder');
+
+    // The suffixes decide which of the group actions the row offers.
+    item.contextValue = node.grouped
+      ? `cliGrid.project.${node.active ? 'active' : 'inactive'}${node.removable ? '.added' : ''}`
+      : 'cliGrid.project';
+
+    const running = this.registry.inProject(node.uri).length;
+    item.description = [
+      node.grouped && node.active ? vscode.l10n.t('showing') : '',
+      node.grouped && !node.active && running
+        ? vscode.l10n.t('{0} running off screen', running)
+        : '',
+      this.git.describe(node.uri),
+    ]
+      .filter(Boolean)
+      .join('  ·  ');
+
+    item.tooltip = new vscode.MarkdownString(
+      [
+        `**${node.name}**`,
+        '',
+        node.uri.fsPath,
+        node.grouped && !node.active ? vscode.l10n.t('Select to show this group in the grid.') : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+
+    // Clicking the row is the obvious way to switch, so it is one — the inline
+    // button, the view title and the keybinding are the same command by other
+    // routes. The row also folds open on the click, which is where its agents
+    // were going to be anyway.
+    if (node.grouped && !node.active) {
+      item.command = {
+        command: 'cliGrid.showGroup',
+        title: vscode.l10n.t('Show This Group'),
+        arguments: [node],
+      };
+    }
     return item;
   }
 

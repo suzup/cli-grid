@@ -33,6 +33,11 @@ const context = {
     get: (_key: string, fallback: unknown) => (typeof fallback === 'boolean' ? true : fallback),
     update: () => Promise.resolve(),
   },
+  // Where the group on screen is remembered, which is per folder.
+  workspaceState: {
+    get: (_key: string, fallback: unknown) => fallback,
+    update: () => Promise.resolve(),
+  },
 };
 
 before(() => {
