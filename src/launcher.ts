@@ -24,6 +24,7 @@ import {
 } from './project.js';
 import type { AgentRegistry } from './registry.js';
 import type { WorkspaceRoots } from './roots.js';
+import { endSessions, findVsCodeSessions, linuxHost } from './sessions.js';
 import { agentLabel, nameFor, type AgentNode } from './tree.js';
 import type { AgentProfile, LaunchMode } from './types.js';
 
@@ -38,6 +39,9 @@ export class Launcher {
     private readonly context: vscode.ExtensionContext,
     private readonly roots: WorkspaceRoots,
   ) {}
+
+  /** The machine, read afresh on every lookup, for ending a duplicate Claude. */
+  private readonly host = linuxHost();
 
   /**
    * Folder -> CLI -> terminal, writing the choice into the project config.
@@ -86,6 +90,8 @@ export class Launcher {
       );
     }
 
+    await this.endDuplicates([{ profile: choice.profile, mode: choice.mode, folder }]);
+
     const column = await this.nextColumn(root);
     await this.grid.unlockAll();
     const agent = this.registry.launch(choice.profile, choice.mode, {
@@ -113,6 +119,46 @@ export class Launcher {
   }
 
   /**
+   * Ends a Claude that is resuming into a conversation this one already has open
+   * elsewhere in VS Code.
+   *
+   * `claude --continue` reopens the folder's last conversation, and it does so
+   * happily while that conversation is live in another window — two processes on
+   * one session leave Claude's Remote Control unable to tell which one is the
+   * client, so neither works. The other process is found from the machine, not
+   * from this window: it belongs to a different VS Code process with its own
+   * terminals, invisible to anything here. Only VS Code's own sessions are
+   * touched; a terminal the user opened outside a window is theirs.
+   *
+   * Called before the layout is computed, because ending a duplicate that sits in
+   * *this* window closes one of its panes — which changes the running count the
+   * split is sized for. Nothing to end means no UI, and Claude only.
+   */
+  private async endDuplicates(
+    targets: { profile: AgentProfile; mode: LaunchMode; folder: vscode.Uri }[],
+  ): Promise<void> {
+    const resuming = targets.filter(
+      (t) => t.mode === 'resume' && t.profile.id === 'claude' && t.folder.scheme === 'file',
+    );
+    if (!resuming.length) return;
+
+    const found = await Promise.all(
+      resuming.map((t) => findVsCodeSessions(t.folder.fsPath, this.host)),
+    );
+    const sessions = [...new Map(found.flat().map((s) => [s.pid, s])).values()];
+    if (!sessions.length) return;
+
+    const folders = [...new Set(resuming.map((t) => basename(t.folder.fsPath)))].join(', ');
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Window,
+        title: vscode.l10n.t('Closing Claude already running in {0}...', folders),
+      },
+      () => endSessions(sessions, this.host),
+    );
+  }
+
+  /**
    * Starts an agent that is already declared in the config.
    *
    * `modeOverride` is a one-off: reopening a folder and picking up the previous
@@ -134,11 +180,23 @@ export class Launcher {
       return;
     }
 
+    const mode = effectiveMode(profile, modeOverride ?? node.spec.mode);
+    await this.endDuplicates([{ profile, mode, folder: node.folder }]);
+
     const column = await this.nextColumn(node.root);
     await this.grid.unlockAll();
+
+    // Asked again: ending a duplicate can take seconds, and a second press of
+    // Start in that time may already have launched this one.
+    const started = this.registry.find(node.root, node.spec.folder, node.spec.cli);
+    if (started) {
+      started.terminal.show(false);
+      return;
+    }
+
     const agent = this.registry.launch(
       profile,
-      effectiveMode(profile, modeOverride ?? node.spec.mode),
+      mode,
       {
         root: node.root,
         folderRef: node.spec.folder,
@@ -163,18 +221,37 @@ export class Launcher {
     const specs = pinnedAgents(config);
     if (!specs.length) return;
 
+    // What actually starts, decided once: already-running agents are left alone,
+    // and each one's mode is what says whether there is a duplicate to end.
+    const plan = new Map<
+      AgentSpec,
+      { profile: AgentProfile; mode: LaunchMode; folder: vscode.Uri }
+    >();
+    for (const spec of specs) {
+      const profile = findProfile(spec.cli);
+      if (!profile || this.registry.find(root, spec.folder, spec.cli)) continue;
+      plan.set(spec, {
+        profile,
+        mode: effectiveMode(profile, modeOverride ?? spec.mode),
+        folder: resolveFolder(root, spec.folder),
+      });
+    }
+
+    await this.endDuplicates([...plan.values()]);
+
     const preset = resolveLayout(config?.layout, specs.length);
     if (preset) await this.grid.applyPreset(preset);
     await this.grid.unlockAll();
 
     for (const [index, spec] of specs.entries()) {
-      if (this.registry.find(root, spec.folder, spec.cli)) continue;
-      const profile = findProfile(spec.cli);
-      if (!profile) continue;
-      this.registry.launch(profile, effectiveMode(profile, modeOverride ?? spec.mode), {
+      const entry = plan.get(spec);
+      // The plan predates the wait for duplicates; anything started meanwhile
+      // (a click on its row, say) is already up and must not get a second pane.
+      if (!entry || this.registry.find(root, spec.folder, spec.cli)) continue;
+      this.registry.launch(entry.profile, entry.mode, {
         root,
         folderRef: spec.folder,
-        folder: resolveFolder(root, spec.folder),
+        folder: entry.folder,
         ...(spec.name ? { name: spec.name } : {}),
         viewColumn: columnFor(index, preset),
       });

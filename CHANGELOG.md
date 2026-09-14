@@ -12,6 +12,15 @@
   the image opens in the pane beside the grid; where a piece names more than one
   file, CLI Grid asks rather than picking.
 
+### Changed
+
+- **Resuming a Claude agent closes the same folder's Claude running elsewhere in
+  VS Code first** — panes in other windows, VS Code terminals, and the Claude
+  extension panel. Two processes on one conversation split Remote Control
+  between them and neither works right, so the resumed agent now starts against
+  a clean session. Terminals opened outside VS Code are the user's own and are
+  left alone; the check is Linux only.
+
 ## 0.1.0 — 2026-08-07
 
 First release.

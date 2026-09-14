@@ -66,5 +66,6 @@
   "Starting the project skips this one.": "전체 시작에서 제외된 에이전트입니다.",
   "Open the image": "이미지 열기",
   "CLI Grid could not find an image named {0}.": "{0} 이라는 이미지를 찾지 못했습니다.",
-  "CLI Grid — which image?": "CLI Grid — 어느 이미지?"
+  "CLI Grid — which image?": "CLI Grid — 어느 이미지?",
+  "Closing Claude already running in {0}...": "{0}에서 이미 실행 중인 Claude를 닫는 중..."
 }
