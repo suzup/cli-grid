@@ -4,28 +4,6 @@
 
 ### Added
 
-- **Groups: several sets of agents in one window, one on screen at a time.**
-  Past four agents a pane is too small to read, and the way round it was a
-  second project folder in a second VS Code window. Each project folder in the
-  window is now a group with its own agents and its own split; the Agents view
-  lists them all and marks the one the grid is showing. Switch from the layers
-  button in the view title, by selecting a group's row, or with `Ctrl+Alt+G`,
-  `Ctrl+Alt+]` and `Ctrl+Alt+[`. Add one with **Add Group...**, which writes a
-  `groups` list into the folder you opened — so the way in is still opening a
-  folder, and nothing is stored outside the project files.
-
-  Switching stops nothing, and mostly moves nothing: a group that fills the grid
-  takes the front tab of each pane and the group behind it stays put, processes
-  and conversations intact, so two groups laid out the same way switch in a
-  tab's worth of work with no split re-applied. A group too small to cover the
-  grid would leave a pane showing the wrong agents, so there the outgoing ones
-  go down into the terminal panel instead, still running; the panel is closed
-  again once they have, since the point of a switch is the grid rather than a
-  terminal panel left across the bottom of it. Starting an agent that belongs
-  to another group brings that group up rather than dropping a terminal into
-  the grid you are looking at. Which group you were last on is remembered per
-  folder.
-
 - **Image paths in an agent's terminal are clickable**, including the ones the
   CLI broke over two lines to fit the pane. Neither half of a wrapped path is a
   file, so the workbench used to hand it to the operating system to open — which

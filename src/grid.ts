@@ -40,13 +40,6 @@ export class EditorGrid implements vscode.Disposable {
   private arranging = false;
 
   /**
-   * Terminals sitting in the panel because the group they belong to is not the
-   * one on screen. Tracked here because nothing in the API answers "where is
-   * this terminal now" — a tab knows it holds a terminal, not which one.
-   */
-  private readonly parked = new Set<vscode.Terminal>();
-
-  /**
    * Whether a pane has ever been locked. Until one has, the workbench is in the
    * state an unlock pass would put it in, so there is nothing to do.
    */
@@ -63,9 +56,6 @@ export class EditorGrid implements vscode.Disposable {
         const agents = [...event.opened, ...event.closed].some(isAgentTab);
         if (agents) void this.syncLocks();
       }),
-      // A parked terminal that has gone is not parked any more; without this the
-      // set holds the last reference to every agent ever stopped off screen.
-      vscode.window.onDidCloseTerminal((terminal) => this.parked.delete(terminal)),
     );
   }
 
@@ -113,68 +103,6 @@ export class EditorGrid implements vscode.Disposable {
     if (first) await focusTerminal(first);
   }
 
-  /**
-   * Puts one set of agents in the grid and leaves the rest running out of sight.
-   *
-   * This is how switching groups is done. The agents that are not on screen
-   * keep running — killing them would throw away the conversation, which is the
-   * whole reason a second set of panes was wanted in the first place — so the
-   * only question is where they wait, and the answer is usually "exactly where
-   * they are". The group coming in takes the front tab of every pane, and a tab
-   * behind another tab is already out of sight. That is what makes an ordinary
-   * switch a change of tab rather than a rebuild of the editor area.
-   *
-   * Only when the incoming group is too small to cover the grid does the one
-   * going out have to actually leave, because a pane it kept would be a pane
-   * showing the wrong group. Then it goes down to the terminal panel, which is
-   * the one place in the workbench a terminal can be while owning no part of
-   * the editor area. Neither route touches the process.
-   */
-  async showOnly(
-    show: readonly vscode.Terminal[],
-    hide: readonly vscode.Terminal[],
-    preset: LayoutPreset,
-  ): Promise<void> {
-    const covered = show.length >= paneCount(preset);
-
-    this.arranging = true;
-    let panel = false;
-    try {
-      if (!covered) for (const terminal of hide) panel = (await this.park(terminal)) || panel;
-      for (const terminal of show) panel = (await this.unpark(terminal)) || panel;
-      // Put the panel away before the grid is laid out rather than after, so the
-      // panes are sized once, at the height they are going to keep.
-      if (panel) await closePanel();
-      await this.place(show, preset);
-    } finally {
-      this.arranging = false;
-    }
-    await this.syncLocks();
-
-    const first = show[0];
-    if (first) await focusTerminal(first);
-  }
-
-  /** Returns whether it had to touch the panel to do it. */
-  private async park(terminal: vscode.Terminal): Promise<boolean> {
-    if (this.parked.has(terminal)) return false;
-    // Recorded before the move rather than after: the record is what stops a
-    // second pass parking it twice, and the command itself is best-effort.
-    this.parked.add(terminal);
-    await focusTerminal(terminal);
-    await vscode.commands.executeCommand('workbench.action.terminal.moveToTerminalPanel');
-    return true;
-  }
-
-  private async unpark(terminal: vscode.Terminal): Promise<boolean> {
-    if (!this.parked.delete(terminal)) return false;
-    // Revealing it is what focusing a panel terminal does, so this opens the
-    // panel as surely as parking one does.
-    await focusTerminal(terminal);
-    await vscode.commands.executeCommand('workbench.action.terminal.moveToEditor');
-    return true;
-  }
-
   /** The arrangement itself, with the caller holding `arranging`. */
   private async place(
     terminals: readonly vscode.Terminal[],
@@ -207,9 +135,9 @@ export class EditorGrid implements vscode.Disposable {
    * Brings each agent to the front of its pane, and says whether that was the
    * whole arrangement.
    *
-   * Switching between two groups that use the same split asks for panes that
-   * are already there holding agents that are already in them, so all it takes
-   * is one tab coming forward in each pane — no split to re-apply, no pane
+   * Re-applying a split that is already in force asks for panes that are
+   * already there holding agents that are already in them, so all it takes is
+   * one tab coming forward in each pane — no split to re-apply, no pane
    * renumbered, and so no lock to put back either. Finding that out costs what
    * doing it costs, because a terminal has to be focused before the workbench
    * will say which group it is in, so the agents are brought forward first and
@@ -432,26 +360,6 @@ async function setLock(column: number, locked: boolean): Promise<boolean> {
   } catch {
     // Older workbenches do not have group locking; the file pane still works.
     return false;
-  }
-}
-
-/**
- * Puts the panel away again after a switch has been through it.
- *
- * A terminal cannot be moved to the panel, or taken back out of it, without the
- * workbench revealing the panel to do it — and the point of switching groups is
- * the grid, not a terminal panel left across the bottom of it taking a third of
- * the window. So it is closed once the move is done.
- *
- * Closed rather than restored to how it was: nothing in the API says whether
- * the panel was open beforehand. Losing an open panel costs one `Ctrl+\``,
- * which is cheaper than every switch shortening the grid.
- */
-async function closePanel(): Promise<void> {
-  try {
-    await vscode.commands.executeCommand('workbench.action.closePanel');
-  } catch {
-    // Nothing here is worth failing a switch over.
   }
 }
 

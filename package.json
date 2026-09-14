@@ -153,60 +153,6 @@
         "command": "cliGrid.applyLayout",
         "title": "%cmd.applyLayout%",
         "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.switchGroup",
-        "title": "%cmd.switchGroup%",
-        "category": "CLI Grid",
-        "icon": "$(layers)"
-      },
-      {
-        "command": "cliGrid.showGroup",
-        "title": "%cmd.showGroup%",
-        "category": "CLI Grid",
-        "icon": "$(eye)"
-      },
-      {
-        "command": "cliGrid.nextGroup",
-        "title": "%cmd.nextGroup%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.previousGroup",
-        "title": "%cmd.previousGroup%",
-        "category": "CLI Grid"
-      },
-      {
-        "command": "cliGrid.addGroup",
-        "title": "%cmd.addGroup%",
-        "category": "CLI Grid",
-        "icon": "$(folder-library)"
-      },
-      {
-        "command": "cliGrid.removeGroup",
-        "title": "%cmd.removeGroup%",
-        "category": "CLI Grid",
-        "icon": "$(close)"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "cliGrid.switchGroup",
-        "key": "ctrl+alt+g",
-        "mac": "cmd+alt+g",
-        "when": "cliGrid.hasGroups"
-      },
-      {
-        "command": "cliGrid.nextGroup",
-        "key": "ctrl+alt+]",
-        "mac": "cmd+alt+]",
-        "when": "cliGrid.hasGroups"
-      },
-      {
-        "command": "cliGrid.previousGroup",
-        "key": "ctrl+alt+[",
-        "mac": "cmd+alt+[",
-        "when": "cliGrid.hasGroups"
       }
     ],
     "menus": {
@@ -258,14 +204,6 @@
         {
           "command": "cliGrid.unpinAgent",
           "when": "false"
-        },
-        {
-          "command": "cliGrid.showGroup",
-          "when": "false"
-        },
-        {
-          "command": "cliGrid.removeGroup",
-          "when": "false"
         }
       ],
       "view/title": [
@@ -273,11 +211,6 @@
           "command": "cliGrid.initProject",
           "when": "view == cliGrid.agents && !cliGrid.isProject && workbenchState != empty",
           "group": "navigation@1"
-        },
-        {
-          "command": "cliGrid.switchGroup",
-          "when": "view == cliGrid.agents && cliGrid.hasGroups",
-          "group": "navigation@0"
         },
         {
           "command": "cliGrid.newAgent",
@@ -295,11 +228,6 @@
           "group": "navigation@3"
         },
         {
-          "command": "cliGrid.addGroup",
-          "when": "view == cliGrid.agents && cliGrid.isProject",
-          "group": "1_config@0"
-        },
-        {
           "command": "cliGrid.openConfig",
           "when": "view == cliGrid.agents && cliGrid.isProject",
           "group": "1_config@1"
@@ -313,38 +241,23 @@
       "view/item/context": [
         {
           "command": "cliGrid.newAgent",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project/",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@1"
         },
         {
           "command": "cliGrid.startAll",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project/",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@2"
         },
         {
           "command": "cliGrid.startAllResumed",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project/",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "inline@3"
         },
         {
           "command": "cliGrid.openConfig",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project/",
+          "when": "view == cliGrid.agents && viewItem == cliGrid.project",
           "group": "1_config@1"
-        },
-        {
-          "command": "cliGrid.showGroup",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project\\.inactive/",
-          "group": "inline@0"
-        },
-        {
-          "command": "cliGrid.showGroup",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project\\.inactive/",
-          "group": "0_group@1"
-        },
-        {
-          "command": "cliGrid.removeGroup",
-          "when": "view == cliGrid.agents && viewItem =~ /^cliGrid\\.project\\..*\\.added$/",
-          "group": "9_danger@1"
         },
         {
           "command": "cliGrid.startAgent",

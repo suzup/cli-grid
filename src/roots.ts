@@ -86,33 +86,6 @@ export class WorkspaceRoots implements vscode.Disposable {
   }
 
   /**
-   * Makes a folder a root of this window in its own right.
-   *
-   * `add` is happy for a folder to be reached through one that is already open,
-   * because all it wants is for the Explorer and Source Control to see it. A
-   * group is different: only a folder the window lists as a root of its own is
-   * read for a project config, so a group folder that merely sits inside
-   * another open folder would never be found.
-   */
-  async ensureRoot(folder: vscode.Uri): Promise<void> {
-    const open = vscode.workspace.workspaceFolders ?? [];
-    if (open.some((existing) => existing.uri.toString() === folder.toString())) return;
-    await this.append([folder]);
-  }
-
-  /** Takes a folder back out whether or not agents work in it, as a group does. */
-  async removeRoot(folder: vscode.Uri): Promise<void> {
-    const at = (vscode.workspace.workspaceFolders ?? []).findIndex(
-      (existing) => existing.uri.toString() === folder.toString(),
-    );
-    // Index 0 is the folder the window was opened on — the way in, and not ours
-    // to close.
-    if (at < 1) return;
-    if (!vscode.workspace.updateWorkspaceFolders(at, 1)) return;
-    await settled();
-  }
-
-  /**
    * Takes a folder back out, once nothing in the project works in it.
    *
    * Called after the agent has left the config, so the removal this causes
@@ -120,7 +93,15 @@ export class WorkspaceRoots implements vscode.Disposable {
    */
   async remove(folder: vscode.Uri): Promise<void> {
     if (this.agentFolders().some((uri) => uri.toString() === folder.toString())) return;
-    await this.removeRoot(folder);
+
+    const at = (vscode.workspace.workspaceFolders ?? []).findIndex(
+      (existing) => existing.uri.toString() === folder.toString(),
+    );
+    // Index 0 is the folder the window was opened on — the project itself, and
+    // not ours to close.
+    if (at < 1) return;
+    if (!vscode.workspace.updateWorkspaceFolders(at, 1)) return;
+    await settled();
   }
 
   /**

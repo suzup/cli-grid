@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import type { EditorGrid } from './grid.js';
-import type { GroupController } from './groups.js';
 import { columnFor, resolveLayout } from './layout.js';
 import { basename, dirnameOf, relativeTo, resolveFolder } from './paths.js';
 import {
@@ -38,7 +37,6 @@ export class Launcher {
     private readonly grid: EditorGrid,
     private readonly context: vscode.ExtensionContext,
     private readonly roots: WorkspaceRoots,
-    private readonly groups: GroupController,
   ) {}
 
   /**
@@ -56,10 +54,6 @@ export class Launcher {
 
     const choice = await this.pickProfile(folder);
     if (!choice) return;
-
-    // The pane this is about to take belongs in its own group's grid, so that
-    // is the grid on screen by the time it opens.
-    await this.groups.ensureActive(root);
 
     const folderRef = relativeTo(root, folder);
     const spec: AgentSpec = {
@@ -134,11 +128,6 @@ export class Launcher {
       return;
     }
 
-    // A row in a group you are not looking at is still a start button, and what
-    // it starts belongs in that group's panes — so pressing it brings the group
-    // up rather than dropping one terminal into somebody else's grid.
-    await this.groups.ensureActive(node.root);
-
     const existing = this.registry.find(node.root, node.spec.folder, node.spec.cli);
     if (existing) {
       existing.terminal.show(false);
@@ -173,8 +162,6 @@ export class Launcher {
     const config = this.projects.configFor(root);
     const specs = pinnedAgents(config);
     if (!specs.length) return;
-
-    await this.groups.ensureActive(root);
 
     const preset = resolveLayout(config?.layout, specs.length);
     if (preset) await this.grid.applyPreset(preset);

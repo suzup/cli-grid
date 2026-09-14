@@ -39,11 +39,5 @@
   "config.lockAgentPanes": "Lock the panes that hold an agent, so files opened from anywhere — the Files view, quick open, go to definition — land in the pane beside the grid instead of on top of a running CLI. Dragging a tab into a pane yourself still works.",
   "command.editAgent": "Agent Settings...",
   "cliGrid.pinAgent.title": "Start With the Project",
-  "cliGrid.unpinAgent.title": "Leave Out of the Project Start",
-  "cmd.switchGroup": "Switch Group...",
-  "cmd.showGroup": "Show This Group",
-  "cmd.nextGroup": "Next Group",
-  "cmd.previousGroup": "Previous Group",
-  "cmd.addGroup": "Add Group...",
-  "cmd.removeGroup": "Remove Group from Window"
+  "cliGrid.unpinAgent.title": "Leave Out of the Project Start"
 }

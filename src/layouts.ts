@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import type { EditorGrid } from './grid.js';
-import type { GroupController } from './groups.js';
 import { AUTO_LAYOUT, LAYOUT_PRESETS, autoPreset, paneCount, resolveLayout } from './layout.js';
 import { inProjectOrder, pinnedAgents, updateConfig, type ProjectWatcher } from './project.js';
 import type { AgentRegistry } from './registry.js';
@@ -9,10 +8,8 @@ import type { LayoutPreset } from './types.js';
 /**
  * Choosing a split, applying it, and remembering it.
  *
- * The split belongs to a group rather than to any one agent, and each group
- * keeps its own: four agents want a 2 x 2 and two want a 2 x 1, and switching
- * between them should not mean picking the split again every time. It is stored
- * in that group's own config, so it comes back when the folder is opened.
+ * The split belongs to the window rather than to any one agent, so it is stored
+ * once — on the first project — and restored when that folder is opened again.
  */
 export class LayoutController {
   constructor(
@@ -20,20 +17,14 @@ export class LayoutController {
     private readonly grid: EditorGrid,
     private readonly registry: AgentRegistry,
     private readonly projects: ProjectWatcher,
-    private readonly groups: GroupController,
   ) {}
 
   /** The layout in force, which is what the checkmark in the view follows. */
   async apply(id: string): Promise<void> {
-    const root = this.groups.active()?.uri;
-
-    // The group on screen, in the order the Agents view lists it — not the
-    // order the agents were started in: the panes are how a split is read, and
-    // the list is where their order was decided. Agents in another group are
-    // parked in the panel and have no pane to be given.
-    const running = inProjectOrder(this.projects.projects(), this.registry.list()).filter(
-      (agent) => !root || agent.root.toString() === root.toString(),
-    );
+    // In the order the Agents view lists them, not the order they were started
+    // in: the panes are how a split is read, and the list is where their order
+    // was decided.
+    const running = inProjectOrder(this.projects.projects(), this.registry.list());
     const preset = resolveLayout(id, running.length);
     if (!preset) return;
 
@@ -45,6 +36,9 @@ export class LayoutController {
     );
     this.view.setCurrent(id);
 
+    // Recorded on the project that owns the config the user is most likely to
+    // be reading, since one window only ever has one split.
+    const root = this.projects.projects()[0]?.uri;
     if (!root) return;
     await updateConfig(root, (config) => {
       config.layout = preset.id;
@@ -53,27 +47,20 @@ export class LayoutController {
   }
 
   /**
-   * Brings back the split the group on screen was left in, on startup.
+   * Brings back the split a project was left in, on startup.
    *
    * Only a project gets its restored editors moved into the file pane; in any
    * other folder the window should look exactly as it was left.
    */
   async restore(): Promise<void> {
-    const config = this.groups.active()?.config;
-    const id = config?.layout ?? AUTO_LAYOUT;
+    const project = this.projects.projects().find((p) => p.config.layout);
+    const id = project?.config.layout ?? AUTO_LAYOUT;
     this.view.setCurrent(id);
 
     // Sized for the agents the start button would bring up, since that is what
     // is about to fill it — an un-pinned agent would leave an empty pane.
-    const preset = resolveLayout(id, pinnedAgents(config).length);
+    const preset = resolveLayout(id, pinnedAgents(project?.config).length);
     if (preset) await this.grid.applyPreset(preset, this.projects.any);
-  }
-
-  /** The checkmark after a switch: the new group's split, not the old one's. */
-  syncView(): void {
-    const active = this.groups.active();
-    this.view.setCurrent(active?.config.layout ?? AUTO_LAYOUT);
-    this.view.setAgentCount(active ? this.registry.inProject(active.uri).length : 0);
   }
 }
 

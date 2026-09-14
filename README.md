@@ -54,13 +54,6 @@ up again tomorrow.
   a pane and a session. Un-pin it and the project's ▶ leaves it alone — it keeps
   its place in the list, says `manual only`, and still starts when you start it.
   The split is sized for the pinned ones, so nothing comes up with a hole in it.
-- **Groups, for when four panes are not enough.** Past four agents a pane is too
-  small to read, and the usual answer is a second folder in a second window. A
-  group is that second folder brought inside this one: each group is a project
-  folder with its own agents and its own split, one is on screen at a time, and
-  the others keep running behind it with their conversations intact. Switch with
-  the layers button above the list, `Ctrl+Alt+G`, or `Ctrl+Alt+]` and
-  `Ctrl+Alt+[`.
 - **Real git**, from VS Code's own Git extension: branch, ahead/behind and
   change count on each row, and the usual colours on changed files.
 - **Layouts that actually split** — 2 × 1, 2 × 2, 3 × 2 and so on, with the
@@ -123,47 +116,6 @@ open. The window then calls itself `Untitled (Workspace)` — that is VS Code's
 name for a window with more than one folder in it, and nothing about the way you
 opened the project changes: the folder list is rebuilt from the project file
 every time, so there is no workspace file to save or reopen.
-
-## Groups
-
-More than about four agents and every pane is too small to read. The way round
-that used to be a second project folder in a second VS Code window; a group is
-that second folder, in this window.
-
-Use **Add Group...** from the `...` menu above the Agents list and pick a
-folder. It is recorded in the folder you opened:
-
-```jsonc
-{
-  "layout": "grid-2x2",
-  "groups": ["../work-b"],
-  "agents": [ /* ... */ ]
-}
-```
-
-Each group is a project folder in its own right, with its own
-`.vscode/cli-grid.json`, its own agents and its own split — four agents in a
-2 × 2 in one, two in a 2 × 1 in the next. The Agents view lists them all, with a
-filled dot on the one the grid is showing; select another row, press the layers
-button in the view title, or use `Ctrl+Alt+G` (`Ctrl+Alt+]` / `Ctrl+Alt+[` to go
-straight to the next or previous one).
-
-**Switching does not stop anything, and mostly does not move anything either.**
-When the group you are switching to fills the grid, it simply takes the front
-tab of each pane and the one you were on stays behind it — same processes, same
-conversations, and the tab is still there to click if you want to look in on it.
-Two groups laid out the same way switch in a tab's worth of work, with no split
-re-applied and nothing to redraw.
-
-A group too small to cover the grid would leave a pane showing the wrong agents,
-so in that case the outgoing ones go down into the terminal panel instead, still
-running. The panel is put away again afterwards, so the grid keeps the whole
-window — press ``Ctrl+` `` to look in on them. Which group you were last on is
-remembered per folder, along with each group's split.
-
-Only the folder you opened is read for a `groups` list, so the way in is still
-opening a folder — and opening a group folder directly gives you that group on
-its own, exactly as it always did.
 
 ## New vs resume
 

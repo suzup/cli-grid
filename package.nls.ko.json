@@ -39,11 +39,5 @@
   "config.lockAgentPanes": "에이전트가 들어 있는 칸을 잠급니다. 파일 뷰·빠른 열기·정의로 이동 등 어디서 파일을 열어도 실행 중인 CLI 위가 아니라 그리드 옆 칸에 열립니다. 탭을 직접 끌어다 놓는 것은 그대로 됩니다.",
   "command.editAgent": "에이전트 설정...",
   "cliGrid.pinAgent.title": "전체 시작에 포함",
-  "cliGrid.unpinAgent.title": "전체 시작에서 제외",
-  "cmd.switchGroup": "그룹 전환...",
-  "cmd.showGroup": "이 그룹 보기",
-  "cmd.nextGroup": "다음 그룹",
-  "cmd.previousGroup": "이전 그룹",
-  "cmd.addGroup": "그룹 추가...",
-  "cmd.removeGroup": "이 창에서 그룹 빼기"
+  "cliGrid.unpinAgent.title": "전체 시작에서 제외"
 }

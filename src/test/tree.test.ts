@@ -6,13 +6,10 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { URI } from 'vscode-uri';
 import { GitStatus } from '../git.js';
-import { EditorGrid } from '../grid.js';
-import { GroupController } from '../groups.js';
 import { clearProfileCache, findProfile } from '../profiles.js';
 import { ProjectWatcher, type AgentSpec } from '../project.js';
 import { AgentRegistry, terminalName } from '../registry.js';
-import { WorkspaceRoots } from '../roots.js';
-import { AgentNode, AgentsTreeProvider, ProjectNode, agentLabel, nameFor } from '../tree.js';
+import { AgentNode, AgentsTreeProvider, agentLabel, nameFor } from '../tree.js';
 
 const root = URI.file('/home/dev/work');
 
@@ -68,20 +65,9 @@ describe('what the tab says', () => {
   });
 });
 
-/** Enough of an extension context for the group controller to remember one thing. */
-const context = {
-  workspaceState: { get: () => undefined, update: () => Promise.resolve() },
-} as never;
-
-function provider(): AgentsTreeProvider {
-  const projects = new ProjectWatcher();
-  const registry = new AgentRegistry();
-  const roots = new WorkspaceRoots(projects, registry);
-  const groups = new GroupController(context, projects, registry, new EditorGrid(), roots);
-  return new AgentsTreeProvider(projects, registry, new GitStatus(), groups);
-}
-
 describe('the row itself', () => {
+  const provider = () =>
+    new AgentsTreeProvider(new ProjectWatcher(), new AgentRegistry(), new GitStatus());
 
   it('leads with the folder and describes it with the CLI', () => {
     const item = provider().getTreeItem(node({ cli: 'claude', folder: 'services/api' }));
@@ -131,45 +117,6 @@ describe('the row itself', () => {
 
     assert.ok(tooltip.includes('/home/dev/work/services/api'), tooltip);
     assert.ok(tooltip.includes('Claude Code'), tooltip);
-  });
-});
-
-describe('a group row', () => {
-  const row = (active: boolean, grouped: boolean, removable = false) =>
-    provider().getTreeItem(new ProjectNode(root, 'work', active, grouped, removable));
-
-  // One group is not a choice, so the row stays the folder it always was.
-  it('is an ordinary project row while there is nothing to switch between', () => {
-    const item = row(true, false);
-
-    assert.equal(item.contextValue, 'cliGrid.project');
-    assert.equal((item.iconPath as { id: string }).id, 'root-folder');
-    assert.equal(item.collapsibleState, 2);
-    assert.ok(!String(item.description).includes('showing'));
-  });
-
-  it('says which group the grid is showing once there is more than one', () => {
-    const shown = row(true, true);
-    const other = row(false, true);
-
-    assert.equal(shown.contextValue, 'cliGrid.project.active');
-    assert.equal(other.contextValue, 'cliGrid.project.inactive');
-    assert.ok(String(shown.description).includes('showing'), String(shown.description));
-    assert.equal((shown.iconPath as { id: string }).id, 'circle-filled');
-    assert.equal((other.iconPath as { id: string }).id, 'circle-outline');
-  });
-
-  // Collapsed, because the whole point is that only one set of rows is in front
-  // of you at a time.
-  it('leaves the group it is not showing folded up', () => {
-    assert.equal(row(true, true).collapsibleState, 2);
-    assert.equal(row(false, true).collapsibleState, 1);
-  });
-
-  // The folder the window was opened on is the way in, so it has no remove.
-  it('marks only the groups that can be taken back out', () => {
-    assert.equal(row(false, true, false).contextValue, 'cliGrid.project.inactive');
-    assert.equal(row(false, true, true).contextValue, 'cliGrid.project.inactive.added');
   });
 });
 

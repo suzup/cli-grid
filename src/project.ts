@@ -44,20 +44,6 @@ export interface AgentSpec {
 
 export interface ProjectConfig {
   layout?: string;
-  /**
-   * Other project folders that belong beside this one, each one a group.
-   *
-   * Four panes is about where a grid stops being readable, and the answer used
-   * to be a second folder in a second window. This is that second folder, in
-   * this window: the folders named here are put in the window on the way up,
-   * every one of them is a project in its own right with its own agents and its
-   * own split, and one of them is on screen at a time.
-   *
-   * Only the folder you opened is read for this. A group is a folder like any
-   * other, so opening one directly gives you that group on its own — the entry
-   * point is still "open a folder", and nothing has to be saved anywhere else.
-   */
-  groups?: string[];
   agents: AgentSpec[];
 }
 
@@ -107,13 +93,8 @@ export async function readConfig(root: vscode.Uri): Promise<ProjectConfig | unde
       .replace(/,(\s*[}\]])/g, '$1');
 
     const parsed = JSON.parse(text) as Partial<ProjectConfig>;
-    const groups = (parsed.groups ?? [])
-      .filter((ref): ref is string => typeof ref === 'string' && ref.trim().length > 0)
-      .map((ref) => ref.trim());
-
     return {
       ...(parsed.layout ? { layout: parsed.layout } : {}),
-      ...(groups.length ? { groups } : {}),
       agents: (parsed.agents ?? [])
         .filter((a): a is AgentSpec => Boolean(a?.cli))
         .map((a) => ({
@@ -137,7 +118,6 @@ export async function writeConfig(root: vscode.Uri, config: ProjectConfig): Prom
   // this filename, so editors offer completion without it being written in.
   const body = {
     ...(config.layout ? { layout: config.layout } : {}),
-    ...(config.groups?.length ? { groups: config.groups } : {}),
     agents: config.agents,
   };
 
@@ -292,29 +272,6 @@ export async function removeAgentFromConfig(
     config.agents = config.agents.filter(
       (a) => !(a.folder === spec.folder && a.cli === spec.cli),
     );
-  });
-}
-
-/* --------------------------------- groups -------------------------------- */
-
-/**
- * Adds a folder to the entry folder's group list, at the end.
- *
- * Only the folder the window was opened on carries this list. It is the one
- * folder that is certainly there on the way up, so it is the only one whose
- * config can be read before the others have been put in the window.
- */
-export async function addGroupToConfig(entry: vscode.Uri, reference: string): Promise<void> {
-  await updateConfig(entry, (config) => {
-    const groups = config.groups ?? [];
-    if (groups.includes(reference)) return;
-    config.groups = [...groups, reference];
-  });
-}
-
-export async function removeGroupFromConfig(entry: vscode.Uri, reference: string): Promise<void> {
-  await updateConfig(entry, (config) => {
-    config.groups = (config.groups ?? []).filter((ref) => ref !== reference);
   });
 }
 

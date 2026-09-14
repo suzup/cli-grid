@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import type { GroupController } from './groups.js';
 import type { ProjectWatcher } from './project.js';
 import type { AgentRegistry } from './registry.js';
 
@@ -14,7 +13,6 @@ export class StatusBar implements vscode.Disposable {
   constructor(
     private readonly projects: ProjectWatcher,
     private readonly registry: AgentRegistry,
-    private readonly groups: GroupController,
   ) {
     this.item = vscode.window.createStatusBarItem(
       'cliGrid.status',
@@ -28,7 +26,6 @@ export class StatusBar implements vscode.Disposable {
       this.item,
       registry.onDidChange(() => this.update()),
       projects.onDidChange(() => this.update()),
-      groups.onDidChange(() => this.update()),
     );
 
     this.update();
@@ -36,25 +33,21 @@ export class StatusBar implements vscode.Disposable {
 
   update(): void {
     const running = this.registry.list().length;
-    const active = this.groups.active();
-    const many = this.groups.many;
+    const configured = this.projects
+      .projects()
+      .reduce((total, p) => total + p.config.agents.length, 0);
 
     this.item.text = running > 0 ? `$(zap) ${running}` : '$(zap) CLI Grid';
-
-    const lines = [
+    this.item.tooltip = [
       running > 0
         ? vscode.l10n.t('{0} agent(s) running', running)
         : vscode.l10n.t('No agents running'),
       this.projects.any
-        ? vscode.l10n.t('{0} configured in this folder', active?.config.agents.length ?? 0)
+        ? vscode.l10n.t('{0} configured in this folder', configured)
         : vscode.l10n.t('This folder is not a CLI Grid project'),
-    ];
-    // Only worth a line when there is more than one group; otherwise it names
-    // the folder every other part of the window already names.
-    if (many && active) lines.push(vscode.l10n.t('Showing the group {0}', active.name));
-    lines.push('', vscode.l10n.t('Click to open CLI Grid'));
-
-    this.item.tooltip = lines.join('\n');
+      '',
+      vscode.l10n.t('Click to open CLI Grid'),
+    ].join('\n');
     this.item.show();
   }
 

@@ -3,7 +3,6 @@ import { registerCommands } from './commands.js';
 import { SECTION, setting } from './config.js';
 import { GitStatus } from './git.js';
 import { EditorGrid } from './grid.js';
-import { GroupController } from './groups.js';
 import { Launcher } from './launcher.js';
 import { LayoutController, LayoutTreeProvider } from './layouts.js';
 import { ImageLinks } from './links.js';
@@ -22,32 +21,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const registry = new AgentRegistry();
   const grid = new EditorGrid();
   const roots = new WorkspaceRoots(projects, registry);
-  const groups = new GroupController(context, projects, registry, grid, roots);
-  const launcher = new Launcher(projects, registry, grid, context, roots, groups);
-  const tree = new AgentsTreeProvider(projects, registry, git, groups);
+  const launcher = new Launcher(projects, registry, grid, context, roots);
+  const tree = new AgentsTreeProvider(projects, registry, git);
   const layoutView = new LayoutTreeProvider();
-  const layouts = new LayoutController(layoutView, grid, registry, projects, groups);
-  const statusBar = new StatusBar(projects, registry, groups);
+  const layouts = new LayoutController(layoutView, grid, registry, projects);
+  const statusBar = new StatusBar(projects, registry);
   const links = new ImageLinks(registry, grid);
 
-  context.subscriptions.push(
-    projects,
-    git,
-    registry,
-    grid,
-    roots,
-    groups,
-    tree,
-    layoutView,
-    statusBar,
-  );
+  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar);
 
   context.subscriptions.push(
-    // The count Auto follows is the group on screen, since that is the grid the
-    // split it picks has to fit.
-    registry.onDidChange(() => layouts.syncView()),
-    // A switch changes both the split in force and the agents it is sized for.
-    groups.onDidChange(() => layouts.syncView()),
+    registry.onDidChange(() => layoutView.setAgentCount(registry.list().length)),
     // Every configured agent's folder is a folder of this window, so the
     // Explorer, Source Control and quick open all reach it without CLI Grid
     // standing in for any of them.
@@ -73,7 +57,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   /** The project a command should act on when it was not invoked on a row. */
-  const rootOf = (node?: ProjectNode) => node?.uri ?? groups.active()?.uri;
+  const rootOf = (node?: ProjectNode) => node?.uri ?? projects.projects()[0]?.uri;
 
   registerCommands(context, {
     'cliGrid.initProject': () => projects.init(),
@@ -114,23 +98,12 @@ export function activate(context: vscode.ExtensionContext): void {
       await launcher.start(node);
     },
 
-    'cliGrid.focusAgent': async (node?: AgentNode) => {
+    'cliGrid.focusAgent': (node?: AgentNode) => {
       const agent = node?.running ?? registry.list()[0];
-      if (!agent) return;
-      // An agent in another group is parked in the panel. Revealing it there
-      // would answer the click, but not with the pane the row was pointing at.
-      await groups.ensureActive(agent.root);
-      agent.terminal.show(true);
+      agent?.terminal.show(true);
     },
 
     'cliGrid.applyLayout': (id?: string) => id && layouts.apply(id),
-
-    'cliGrid.switchGroup': () => groups.pick(),
-    'cliGrid.showGroup': (node?: ProjectNode) => node && groups.switchTo(node.uri),
-    'cliGrid.nextGroup': () => groups.step(1),
-    'cliGrid.previousGroup': () => groups.step(-1),
-    'cliGrid.addGroup': () => groups.add(),
-    'cliGrid.removeGroup': (node?: ProjectNode) => node && groups.remove(node.uri),
 
     'cliGrid.openConfig': async (node?: ProjectNode) => {
       const root = rootOf(node);
@@ -149,7 +122,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const startAgent = (node: AgentNode, mode?: 'new' | 'resume') => launcher.start(node, mode);
 
-  void start(context, projects, launcher, layouts, roots, groups);
+  void start(context, projects, launcher, layouts, roots);
 }
 
 export function deactivate(): void {
@@ -162,14 +135,7 @@ async function start(
   launcher: Launcher,
   layouts: LayoutController,
   roots: WorkspaceRoots,
-  groups: GroupController,
 ): Promise<void> {
-  await projects.refresh();
-
-  // First of all, because every folder a group names is a project of this
-  // window and everything below counts projects. Opening one folder is still
-  // the only way in — the rest of the list comes out of its config.
-  await groups.sync();
   await projects.refresh();
 
   // Before anything else looks at the window: the folders the agents work in
@@ -177,13 +143,11 @@ async function start(
   // should be reading a workspace that is already complete.
   await roots.sync();
 
-  groups.restore();
   await layouts.restore();
 
-  // Only the group on screen: the others have no panes, and starting them would
-  // be starting CLIs into a grid nobody is looking at.
-  const active = groups.active();
-  if (setting('autoStart') && active) await launcher.startAll(active.uri);
+  if (setting('autoStart')) {
+    for (const project of projects.projects()) await launcher.startAll(project.uri);
+  }
 
   await showIntroOnce(context, projects);
 }
