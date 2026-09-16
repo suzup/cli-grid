@@ -1,7 +1,7 @@
 # CLI Grid
 
-Run several CLI coding agents side by side — Claude Code, Codex, Gemini CLI —
-without losing track of which repository each one is sitting in.
+Run several CLI coding agents side by side — Claude Code, Codex, Gemini CLI,
+Devin — without losing track of which repository each one is sitting in.
 
 VS Code already has a file tree, git decorations, a terminal grid and per-folder
 configuration. CLI Grid does not rebuild any of that. It supplies the thin
@@ -127,6 +127,7 @@ to pass; the CLI owns everything after that.
 | Claude Code | `claude` | `claude --continue` |
 | Codex | `codex` | `codex resume --last` |
 | Gemini | `gemini` | `gemini --resume` |
+| Devin | `devin` | `devin --continue` |
 
 `Enter` uses the default mode; the **🕘 / +** button on each row uses the other
 one. Change the default with `cliGrid.defaultMode`, per profile, or per agent

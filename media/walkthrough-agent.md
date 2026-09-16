@@ -3,6 +3,7 @@
 │ ✨ Claude Code          new           🕘  │
 │ 🚀 Codex                new           🕘  │
 │ ⭐ Gemini               new           🕘  │
+│ 🤖 Devin                new           🕘  │
 └───────────────────────────────────────────┘
 ```
 

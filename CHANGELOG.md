@@ -4,6 +4,11 @@
 
 ### Added
 
+- **A built-in profile for Devin** (`devin`), alongside Claude Code, Codex and
+  Gemini. Resume passes `--continue`, which is Devin's shortcut to the most
+  recent conversation in the folder rather than its session picker — the same
+  pair of flags Claude Code has.
+
 - **Image paths in an agent's terminal are clickable**, including the ones the
   CLI broke over two lines to fit the pane. Neither half of a wrapped path is a
   file, so the workbench used to hand it to the operating system to open — which

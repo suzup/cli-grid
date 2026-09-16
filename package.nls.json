@@ -19,7 +19,7 @@
   "config.launchStrategy.shell": "Run through a login shell (more compatible)",
   "config.launchStrategy.exec": "Execute the command directly (accurate exit codes)",
   "config.autoStart": "Start the folder's agents as soon as it is opened. Off by default so that opening a folder never launches a CLI you did not ask for.",
-  "config.profiles": "CLI profiles shown in the launcher. Entries are merged over the built-in defaults for `claude`, `codex` and `gemini`; set `hidden` to `true` to remove one. Arguments are passed through untouched.",
+  "config.profiles": "CLI profiles shown in the launcher. Entries are merged over the built-in defaults for `claude`, `codex`, `gemini` and `devin`; set `hidden` to `true` to remove one. Arguments are passed through untouched.",
   "walkthrough.title": "Get Started with CLI Grid",
   "walkthrough.description": "Run several coding agents side by side without losing track of which repository each one is in.",
   "walkthrough.step1.title": "Open a folder",

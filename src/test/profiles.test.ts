@@ -26,10 +26,10 @@ beforeEach(() => {
 });
 
 describe('built-in profiles', () => {
-  it('ships the three CLIs the extension is about', () => {
+  it('ships the CLIs the extension is about', () => {
     assert.deepEqual(
       readProfiles().map((p) => p.id),
-      ['claude', 'codex', 'gemini'],
+      ['claude', 'codex', 'gemini', 'devin'],
     );
   });
 
@@ -81,7 +81,7 @@ describe('overrides', () => {
     assert.equal(findProfile('gemini'), undefined);
     assert.deepEqual(
       readProfiles().map((p) => p.id),
-      ['claude', 'codex'],
+      ['claude', 'codex', 'devin'],
     );
   });
 

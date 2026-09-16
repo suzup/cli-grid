@@ -19,7 +19,7 @@
   "config.launchStrategy.shell": "로그인 셸로 실행 (호환성 우선)",
   "config.launchStrategy.exec": "명령을 직접 실행 (종료 코드 정확)",
   "config.autoStart": "폴더를 열면 그 폴더의 에이전트를 바로 실행합니다. 원치 않은 CLI가 실행되지 않도록 기본값은 꺼짐입니다.",
-  "config.profiles": "실행기에 표시할 CLI 프로파일입니다. `claude`·`codex`·`gemini` 기본값 위에 병합되며, `hidden`을 `true`로 두면 목록에서 빠집니다. 인자는 그대로 전달됩니다.",
+  "config.profiles": "실행기에 표시할 CLI 프로파일입니다. `claude`·`codex`·`gemini`·`devin` 기본값 위에 병합되며, `hidden`을 `true`로 두면 목록에서 빠집니다. 인자는 그대로 전달됩니다.",
   "walkthrough.title": "CLI Grid 시작하기",
   "walkthrough.description": "여러 코딩 에이전트를 나란히 띄우면서도 각각이 어느 저장소에 있는지 놓치지 않습니다.",
   "walkthrough.step1.title": "폴더 열기",

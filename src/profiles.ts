@@ -10,6 +10,8 @@ import type { AgentProfile, LaunchMode } from './types.js';
  *   `--resume` opens the CLI's own session picker.
  * - codex:  `resume` is a subcommand; `--last` skips its picker.
  * - gemini: `--resume` opens its picker; it has no "most recent" shortcut.
+ * - devin:  `--continue` takes the most recent conversation, `--resume` opens
+ *   the picker — the same pair as claude.
  *
  * Resume defaults are deliberately absent: `claude --continue` exits with an
  * error in a folder that has no prior conversation, so opting in is the user's
@@ -39,6 +41,14 @@ const BUILT_IN: AgentProfile[] = [
     args: { new: [], resume: ['--resume'] },
     icon: 'star-full',
     color: 'terminal.ansiBlue',
+  },
+  {
+    id: 'devin',
+    label: 'Devin',
+    command: 'devin',
+    args: { new: [], resume: ['--continue'] },
+    icon: 'hubot',
+    color: 'terminal.ansiMagenta',
   },
 ];
 

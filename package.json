@@ -1,6 +1,6 @@
 {
   "name": "cli-grid",
-  "displayName": "CLI Grid — multi-agent Claude Code, Codex, Gemini",
+  "displayName": "CLI Grid — multi-agent Claude Code, Codex, Gemini, Devin",
   "description": "Run several agent CLIs side by side in VS Code, configured per folder. No tmux, no extra window, with each agent's files and git beside it.",
   "version": "0.1.0",
   "publisher": "suzup",
@@ -16,6 +16,7 @@
     "claude code",
     "codex",
     "gemini cli",
+    "devin",
     "multi agent",
     "multi-agent",
     "agent",
