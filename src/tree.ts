@@ -207,6 +207,12 @@ export class AgentsTreeProvider
       .filter(Boolean)
       .join('  ·  ');
 
+    // Words at the end of a grey line do not set a row apart from the one above
+    // it. A decoration does: the name itself is muted, with a mark at the edge.
+    if (!pinned && !node.adHoc) {
+      item.resourceUri = vscode.Uri.from({ scheme: MANUAL_SCHEME, path: `/${item.id}` });
+    }
+
     item.iconPath = node.running
       ? new vscode.ThemeIcon(
           profile?.icon ?? 'terminal',
@@ -254,5 +260,22 @@ export class AgentsTreeProvider
   dispose(): void {
     this.changeEmitter.dispose();
     for (const d of this.disposables) d.dispose();
+  }
+}
+
+/** The scheme of the uri an agent's row has when starting the project skips it. */
+const MANUAL_SCHEME = 'cli-grid-manual';
+
+/** Mutes the rows of the agents that are only ever started by hand. */
+export class ManualDecorations implements vscode.FileDecorationProvider {
+  provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
+    if (uri.scheme !== MANUAL_SCHEME) return undefined;
+
+    return {
+      // One letter is all a badge holds; the hover spells it out.
+      badge: vscode.l10n.t('M'),
+      color: new vscode.ThemeColor('disabledForeground'),
+      tooltip: vscode.l10n.t('manual only'),
+    };
   }
 }

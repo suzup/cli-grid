@@ -1,8 +1,10 @@
 import { homedir, tmpdir } from 'node:os';
 import * as vscode from 'vscode';
 import type { EditorGrid } from './grid.js';
+import { rejoin } from './output.js';
 import { basename, dirnameOf, exists, join, relativeTo, resolveFolder } from './paths.js';
 import type { AgentRegistry } from './registry.js';
+import { pathsIn, recentTranscripts, type Piece } from './transcripts.js';
 import type { RunningAgent } from './types.js';
 
 /** Extensions the workbench opens in its image preview rather than as text. */
@@ -21,6 +23,21 @@ const MARKER = /\[image\][:\s]\s*([^\s│┃┆┊╎╏┋]+)[\s│┃┆┊╎
 /** Not ours: the workbench opens a link with a scheme in a browser. */
 const SCHEME = /^[a-z][a-z\d+.-]*:\/\//i;
 
+/** Nothing on a line but the indent and the border a CLI draws. */
+const BLANK = /^[\s│┃┆┊╎╏┋]*$/;
+
+/** `:12`, and the full stop of the sentence a path ended. Neither is in the name. */
+const LOCATION = /(?::\d+)*\.*$/;
+
+/** A path from the root, a home or a drive, and at least one folder deep. */
+const ABSOLUTE = /^(?:~?\/|[A-Za-z]:[\\/])[^\\/]+[\\/]/;
+
+/** How a path that names a file ends, as far as its shape can say. */
+const EXTENSION = /\.[A-Za-z\d]{1,8}$/;
+
+/** Paths one piece could be part of that are checked against the disk. */
+const MAX_FOLLOWED = 20;
+
 /** Directories a single click may read before giving up on finding the file. */
 const MAX_DIRS = 400;
 
@@ -36,14 +53,23 @@ const MAX_IMAGES = 50;
 /** Never worth walking, and each of them is enormous. */
 const SKIP = new Set(['node_modules', '.git', '.hg', '.svn', 'target', 'build', 'dist']);
 
-interface ImageLink extends vscode.TerminalLink {
+interface PathLink extends vscode.TerminalLink {
   /** The text as the terminal has it, which may be half of a path. */
-  text: string;
+  piece: Piece;
+  /** Named as an image by its extension or by the CLI, so worth searching for. */
+  image: boolean;
   agent: RunningAgent;
+  /** The terminal's lines as they were when the link was made. */
+  drawn: string[] | undefined;
+}
+
+/** What an agent's terminal has drawn, where anything was listening. */
+export interface DrawnLines {
+  linesOf(terminal: vscode.Terminal): string[] | undefined;
 }
 
 /**
- * Makes the image paths a CLI prints openable, in the agents' terminals.
+ * Makes the paths a CLI broke in half openable, in the agents' terminals.
  *
  * The workbench already links a path it can find on disk, and with the agent
  * panes locked that lands beside the grid — so on a line the CLI printed whole
@@ -56,39 +82,75 @@ interface ImageLink extends vscode.TerminalLink {
  * as an external program, which on WSL hands a Linux path to Windows and fails
  * with "the system cannot find the file specified".
  *
- * So the halves are put back together against the file system: what is on the
- * line is a prefix of a real path, or a suffix of one, and either is usually
- * enough to name exactly one file.
+ * So the halves are put back together, from the best account of them there is.
+ * What the terminal was sent has the two lines one after the other, whatever
+ * the CLI and whatever the file. Failing that — a terminal nobody was listening
+ * to, a line long scrolled away — the CLI's own record of the conversation has
+ * the path whole, and the piece is the start or the end of it there. And where
+ * there is neither, an image is still looked for on the file system: what is on
+ * the line is a prefix of a real path, or a suffix of one, and either is
+ * usually enough to name exactly one file.
  */
-export class ImageLinks implements vscode.TerminalLinkProvider<ImageLink> {
+export class PathLinks implements vscode.TerminalLinkProvider<PathLink> {
   constructor(
     private readonly registry: AgentRegistry,
     private readonly grid: EditorGrid,
+    private readonly output: DrawnLines,
   ) {}
 
   /**
-   * Hover is not the place to touch the disk — this runs for every line the
-   * mouse crosses — so nothing here is checked against the file system. A link
-   * that turns out to name nothing says so when it is clicked.
+   * Hover is not the place to search the disk — this runs for every line the
+   * mouse crosses. An image is linked on its shape alone, and says so when it
+   * is clicked if it names nothing. Any other piece costs a stat or two: a path
+   * that exists as written is the workbench's to link, line number and all,
+   * and only one that does not is a half.
+   *
+   * With the terminal's own lines to go by, a half is whatever joins up with
+   * the line next to it into a file, of any shape. Without them it has to look
+   * like one: a path from the root, or the end of a file name.
    */
-  provideTerminalLinks(context: vscode.TerminalLinkContext): ImageLink[] {
+  async provideTerminalLinks(context: vscode.TerminalLinkContext): Promise<PathLink[]> {
     const agent = this.registry.byTerminal(context.terminal);
     if (!agent) return [];
 
-    return imageTokens(context.line).map((token) => ({
+    const line = context.line;
+    const drawn = this.output.linesOf(context.terminal);
+    const link = (token: PathToken, image: boolean): PathLink => ({
       startIndex: token.index,
       length: token.text.length,
-      tooltip: vscode.l10n.t('Open the image'),
-      text: token.text,
+      tooltip: image ? vscode.l10n.t('Open the image') : vscode.l10n.t('Open the file'),
+      piece: pieceAt(line, token),
+      image,
       agent,
-    }));
+      drawn,
+    });
+
+    const images = imageTokens(line);
+    const links = images.map((token) => link(token, true));
+    const shaped = cutTokens(line);
+
+    for (const token of endTokens(line)) {
+      if (images.some((image) => image.index === token.index)) continue;
+
+      const candidate = link(token, false);
+      const looksCut = shaped.some((cut) => cut.index === token.index);
+      const joins = drawn ? rejoin(drawn, candidate.piece) : [];
+      if (!looksCut && !joins.length) continue;
+
+      if (await exists(resolveFolder(agent.folder, expandHome(token.text)))) continue;
+      if (!looksCut && !(await filesAmong(joins, agent)).length) continue;
+      links.push(candidate);
+    }
+    return links;
   }
 
-  async handleTerminalLink(link: ImageLink): Promise<void> {
-    const uri = await this.resolve(link.text, link.agent);
+  async handleTerminalLink(link: PathLink): Promise<void> {
+    const uri = await this.resolve(link);
     if (!uri) {
       void vscode.window.showWarningMessage(
-        vscode.l10n.t('CLI Grid could not find an image named {0}.', link.text),
+        link.image
+          ? vscode.l10n.t('CLI Grid could not find an image named {0}.', link.piece.text)
+          : vscode.l10n.t('CLI Grid could not find the file {0} is part of.', link.piece.text),
       );
       return;
     }
@@ -100,17 +162,28 @@ export class ImageLinks implements vscode.TerminalLinkProvider<ImageLink> {
    * The file a piece of a line names, if exactly one answers to it.
    *
    * Whole path first — the common case, and the only one that costs a single
-   * stat. A piece that still ends in an image extension is the tail of a
-   * wrapped path; one that does not is the head of it.
+   * stat. Then the lines either side of it in the terminal, then what the CLI
+   * itself wrote down. Last, for an image, the file system: a piece that still
+   * ends in an image extension is the tail of a wrapped path; one that does not
+   * is the head of it.
    */
-  private async resolve(text: string, agent: RunningAgent): Promise<vscode.Uri | undefined> {
-    const uri = resolveFolder(agent.folder, expandHome(text));
+  private async resolve(link: PathLink): Promise<vscode.Uri | undefined> {
+    const { piece, image, agent } = link;
+    const uri = resolveFolder(agent.folder, expandHome(piece.text));
     if (await exists(uri)) return uri;
+
+    const lines = this.output.linesOf(agent.terminal) ?? link.drawn;
+    const shown = lines ? await filesAmong(rejoin(lines, piece), agent) : [];
+    if (shown.length) return shown.length === 1 ? shown[0] : choose(shown);
+
+    const said = await saidBy(agent, piece);
+    if (said.length) return said.length === 1 ? said[0] : choose(said);
+    if (!image) return undefined;
 
     // Everything past here compares against a uri path, which is separated the
     // one way whatever the CLI printed.
-    const piece = expandHome(text).replace(/\\/g, '/');
-    return IMAGE.test(piece) ? bySuffix(piece, agent) : byPrefix(piece, agent);
+    const text = expandHome(piece.text).replace(/\\/g, '/');
+    return IMAGE.test(text) ? bySuffix(text, agent) : byPrefix(text, agent);
   }
 }
 
@@ -145,6 +218,94 @@ export function imageTokens(line: string): PathToken[] {
   if (!marker || !cut || !cut.includes('/') || SCHEME.test(cut)) return found;
 
   return [{ text: cut, index: marker.index + marker[0].lastIndexOf(cut) }];
+}
+
+/**
+ * The ends of a line that could be half of a path of any kind.
+ *
+ * Only the ends, because a wrap is where a line stops: the head of a path is
+ * the last thing on its line and the tail the first on the next. A head is
+ * recognised by starting where a path starts, a tail by ending the way a file
+ * name does.
+ */
+export function cutTokens(line: string): PathToken[] {
+  const found: PathToken[] = [];
+
+  for (const match of line.matchAll(TOKEN)) {
+    const text = match[0].replace(LOCATION, '');
+    if (match.index === undefined || SCHEME.test(text)) continue;
+
+    const { openLeft, openRight } = pieceAt(line, { text, index: match.index });
+    const head = openRight && ABSOLUTE.test(text);
+    const tail = openLeft && !ABSOLUTE.test(text) && /[\\/]/.test(text) && EXTENSION.test(text);
+    if (head || tail) found.push({ text, index: match.index });
+  }
+  return found;
+}
+
+/** The first and last words of a line: where a wrap would have left a half. */
+function endTokens(line: string): PathToken[] {
+  const found: PathToken[] = [];
+
+  for (const match of line.matchAll(TOKEN)) {
+    const text = match[0].replace(LOCATION, '');
+    if (match.index === undefined || !text || SCHEME.test(text)) continue;
+
+    const { openLeft, openRight } = pieceAt(line, { text, index: match.index });
+    if (openLeft || openRight) found.push({ text, index: match.index });
+  }
+  return found;
+}
+
+/** A token with what its line has either side of it. */
+function pieceAt(line: string, token: PathToken): Piece {
+  const before = line.slice(0, token.index);
+  const after = line.slice(token.index + token.text.length);
+  return {
+    text: token.text,
+    openLeft: BLANK.test(before),
+    openRight: BLANK.test(after.replace(/^(?::\d+)*\.*/, '')),
+    before,
+    after,
+  };
+}
+
+/**
+ * The files the CLI named in its own record of the conversation with a path
+ * this piece is part of, the likeliest first.
+ */
+async function saidBy(agent: RunningAgent, piece: Piece): Promise<vscode.Uri[]> {
+  const wanted = { ...piece, text: piece.text.replace(/\\/g, '/') };
+
+  for (const text of await recentTranscripts(agent.profileId, agent.folder.fsPath)) {
+    const files = await filesAmong(pathsIn(text, wanted), agent);
+    if (files.length) return files;
+  }
+  return [];
+}
+
+/**
+ * Those of some paths that are files, in the order given. A path that was
+ * mentioned and never written, or put together out of two words that only
+ * happened to be next to each other, is not something to open.
+ */
+async function filesAmong(paths: string[], agent: RunningAgent): Promise<vscode.Uri[]> {
+  const files = new Map<string, vscode.Uri>();
+
+  for (const path of paths.slice(0, MAX_FOLLOWED)) {
+    const uri = resolveFolder(agent.folder, expandHome(path));
+    if (isFile(await statOf(uri))) files.set(uri.toString(), uri);
+  }
+  return [...files.values()];
+}
+
+/** Asks which of several files a piece meant, in the order they are given. */
+async function choose(files: vscode.Uri[]): Promise<vscode.Uri | undefined> {
+  const pick = await vscode.window.showQuickPick(
+    files.map((uri) => ({ label: basename(uri.path), description: dirnameOf(uri).path, uri })),
+    { title: vscode.l10n.t('CLI Grid — which file?') },
+  );
+  return pick?.uri;
 }
 
 /**

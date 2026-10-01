@@ -224,6 +224,7 @@ const members: Record<string, unknown> = {
     tabGroups: { all: [], onDidChangeTabs: never },
     createTreeView: () => ({ selection: [], description: undefined, dispose() {} }),
     registerTerminalLinkProvider: () => noop,
+    registerFileDecorationProvider: () => noop,
     createStatusBarItem: () => ({ show() {}, hide() {}, dispose() {} }),
   },
   commands: {

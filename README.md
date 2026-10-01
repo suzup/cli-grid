@@ -52,8 +52,9 @@ up again tomorrow.
 - **A pin on each row, for which agents come up together.** Four agents in a
   project is rarely four you want running every time, and the odd one out costs
   a pane and a session. Un-pin it and the project's ▶ leaves it alone — it keeps
-  its place in the list, says `manual only`, and still starts when you start it.
-  The split is sized for the pinned ones, so nothing comes up with a hole in it.
+  its place in the list, is greyed with an `M` at the edge of its row, and still
+  starts when you start it. The split is sized for the pinned ones, so nothing
+  comes up with a hole in it.
 - **Real git**, from VS Code's own Git extension: branch, ahead/behind and
   change count on each row, and the usual colours on changed files.
 - **Layouts that actually split** — 2 × 1, 2 × 2, 3 × 2 and so on, with the
@@ -63,12 +64,18 @@ up again tomorrow.
   locked, so a file — from the Explorer, quick open, or go to definition — lands
   in one pane of its own next to the grid. They are ordinary editors: drag the
   tab where you want it, or split it.
-- **The image an agent names, opened by clicking it.** A pane a third of the
-  window wide is narrower than the paths a CLI prints, so it wraps them itself
-  and the workbench is left with two halves of a name, neither of which is a
-  file — on WSL that ends as a Windows dialog saying the file cannot be found.
-  Clicking either half opens the image beside the grid: the piece on the line
-  is the start or the end of a real path, and that is enough to find it.
+- **The path an agent names, opened by clicking it — wrapped or not.** A pane a
+  third of the window wide is narrower than the paths a CLI prints, so it wraps
+  them itself and the workbench is left with two halves of a name, neither of
+  which is a file — on WSL that ends as a Windows dialog saying the file cannot
+  be found. Clicking either half opens the file beside the grid, whatever kind
+  of file it is and wherever it is. CLI Grid keeps the lines each agent's
+  terminal is sent, so it knows what the line above ended on and the line below
+  starts with, for any CLI. Where it could not listen — `launchStrategy` set to
+  `exec`, or shell integration turned off — it looks the piece up in the
+  conversation Claude Code, Codex and Devin keep on disk, and failing that
+  searches the folders around the agent for an image whose path starts or ends
+  that way.
 
 ## How it is configured
 

@@ -5,13 +5,20 @@ import { GitStatus } from './git.js';
 import { EditorGrid } from './grid.js';
 import { Launcher } from './launcher.js';
 import { LayoutController, LayoutTreeProvider } from './layouts.js';
-import { ImageLinks } from './links.js';
+import { PathLinks } from './links.js';
+import { AgentOutput } from './output.js';
 import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
 import { WorkspaceRoots } from './roots.js';
 import { StatusBar } from './statusbar.js';
-import { AgentsTreeProvider, type AgentNode, type Node, type ProjectNode } from './tree.js';
+import {
+  AgentsTreeProvider,
+  ManualDecorations,
+  type AgentNode,
+  type Node,
+  type ProjectNode,
+} from './tree.js';
 
 const INTRO_SHOWN_KEY = 'cliGrid.introShown';
 
@@ -26,9 +33,10 @@ export function activate(context: vscode.ExtensionContext): void {
   const layoutView = new LayoutTreeProvider();
   const layouts = new LayoutController(layoutView, grid, registry, projects);
   const statusBar = new StatusBar(projects, registry);
-  const links = new ImageLinks(registry, grid);
+  const output = new AgentOutput(registry);
+  const links = new PathLinks(registry, grid, output);
 
-  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar);
+  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar, output);
 
   context.subscriptions.push(
     registry.onDidChange(() => layoutView.setAgentCount(registry.list().length)),
@@ -39,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // The paths an agent prints are the window's files, and a pane three
     // columns wide is where a CLI breaks one in half.
     vscode.window.registerTerminalLinkProvider(links),
+    vscode.window.registerFileDecorationProvider(new ManualDecorations()),
     vscode.window.createTreeView('cliGrid.layout', { treeDataProvider: layoutView }),
     vscode.window.createTreeView('cliGrid.agents', {
       treeDataProvider: tree,

@@ -17,7 +17,22 @@
   the image opens in the pane beside the grid; where a piece names more than one
   file, CLI Grid asks rather than picking.
 
+- **A wrapped path of any kind opens from either half**, not only an image, and
+  wherever the file is. The halves used to be matched against the folders around
+  the agent, which found nothing for a file elsewhere on the machine and did not
+  try for anything but an image. Now the lines an agent's terminal is sent are
+  kept as they go by — shell integration lets an extension read what a command
+  writes — so the piece under the cursor is put back against the line it was cut
+  from, with any CLI: a path from the root or a relative one, cut inside a
+  folder's name or a file's, over two lines or four. A terminal that could not
+  be listened to falls back on the conversation Claude Code, Codex and Devin
+  write to disk, where every path is whole, and then on the old search.
+
 ### Changed
+
+- **An agent that is only started by hand is greyed in the list**, with an `M`
+  at the edge of its row. `manual only` at the end of a line of grey text did
+  not set a row apart from the ones around it.
 
 - **Resuming a Claude agent closes the same folder's Claude running elsewhere in
   VS Code first** — panes in other windows, VS Code terminals, and the Claude
