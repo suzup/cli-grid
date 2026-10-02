@@ -13,6 +13,10 @@ import type { AgentProfile, LaunchMode } from './types.js';
  * - devin:  `--continue` takes the most recent conversation, `--resume` opens
  *   the picker — the same pair as claude.
  *
+ * `sendNow` is what each one's own prompt offers while it is working, read off
+ * the running CLI: claude queues a message until ctrl+enter, codex until esc
+ * ("interrupt and send immediately"), devin until a second enter.
+ *
  * Resume defaults are deliberately absent: `claude --continue` exits with an
  * error in a folder that has no prior conversation, so opting in is the user's
  * call rather than ours.
@@ -25,6 +29,7 @@ const BUILT_IN: AgentProfile[] = [
     args: { new: [], resume: ['--continue'] },
     icon: 'sparkle',
     color: 'terminal.ansiYellow',
+    sendNow: ['\x1b[13;5u'],
   },
   {
     id: 'codex',
@@ -33,6 +38,7 @@ const BUILT_IN: AgentProfile[] = [
     args: { new: [], resume: ['resume', '--last'] },
     icon: 'rocket',
     color: 'terminal.ansiGreen',
+    sendNow: ['\x1b'],
   },
   {
     id: 'gemini',
@@ -49,6 +55,7 @@ const BUILT_IN: AgentProfile[] = [
     args: { new: [], resume: ['--continue'] },
     icon: 'hubot',
     color: 'terminal.ansiMagenta',
+    sendNow: ['\r'],
   },
 ];
 
@@ -89,6 +96,7 @@ function mergeProfiles(): AgentProfile[] {
       icon: override.icon ?? base?.icon ?? 'terminal',
       ...(override.color ?? base?.color ? { color: override.color ?? base?.color } : {}),
       ...(override.env ?? base?.env ? { env: { ...base?.env, ...override.env } } : {}),
+      ...(override.sendNow ?? base?.sendNow ? { sendNow: override.sendNow ?? base?.sendNow } : {}),
       ...(override.hidden !== undefined ? { hidden: override.hidden } : {}),
     });
   }

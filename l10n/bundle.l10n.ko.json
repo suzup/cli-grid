@@ -71,5 +71,7 @@
   "Open the file": "파일 열기",
   "CLI Grid could not find the file {0} is part of.": "{0} 이(가) 가리키는 파일을 찾지 못했습니다.",
   "CLI Grid — which file?": "CLI Grid — 어느 파일?",
-  "Closing Claude already running in {0}...": "{0}에서 이미 실행 중인 Claude를 닫는 중..."
+  "Closing Claude already running in {0}...": "{0}에서 이미 실행 중인 Claude를 닫는 중...",
+  "Send": "보내기",
+  "Ask {0} running agent(s) to wrap up?": "실행 중인 에이전트 {0}개에게 마무리를 요청할까요?"
 }

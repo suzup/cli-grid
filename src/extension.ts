@@ -10,6 +10,7 @@ import { AgentOutput } from './output.js';
 import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
+import { Remote, agentTerminals } from './remote.js';
 import { WorkspaceRoots } from './roots.js';
 import { StatusBar } from './statusbar.js';
 import {
@@ -25,7 +26,8 @@ const INTRO_SHOWN_KEY = 'cliGrid.introShown';
 export function activate(context: vscode.ExtensionContext): void {
   const projects = new ProjectWatcher();
   const git = new GitStatus();
-  const registry = new AgentRegistry();
+  const remote = new Remote();
+  const registry = new AgentRegistry(remote);
   const grid = new EditorGrid();
   const roots = new WorkspaceRoots(projects, registry);
   const launcher = new Launcher(projects, registry, grid, context, roots);
@@ -36,7 +38,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const output = new AgentOutput(registry);
   const links = new PathLinks(registry, grid, output);
 
-  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar, output);
+  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar, output, remote);
 
   context.subscriptions.push(
     registry.onDidChange(() => layoutView.setAgentCount(registry.list().length)),
@@ -105,6 +107,20 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!node) return;
       if (node.running) registry.stop(node.running.id);
       await launcher.start(node);
+    },
+
+    // Before closing the window: a CLI resumed after being cut off mid-task
+    // does not pick its background work back up, so it is asked to stop first.
+    'cliGrid.wrapUpAll': async () => {
+      const count = agentTerminals().size;
+      if (!count) return;
+      const send = vscode.l10n.t('Send');
+      const answer = await vscode.window.showWarningMessage(
+        vscode.l10n.t('Ask {0} running agent(s) to wrap up?', count),
+        { modal: true, detail: setting('wrapUpMessage') },
+        send,
+      );
+      if (answer === send) await remote.broadcast(setting('wrapUpMessage'));
     },
 
     'cliGrid.focusAgent': (node?: AgentNode) => {

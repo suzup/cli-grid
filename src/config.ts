@@ -17,6 +17,9 @@ export const DEFAULTS = {
   launchStrategy: 'shell' as 'shell' | 'exec',
   autoStart: false,
   lockAgentPanes: true,
+  remoteInput: false,
+  wrapUpMessage:
+    'This terminal is about to be closed and the session resumed afterwards. Stop here: cancel or wait for anything still running in the background, including subagents, and write down where you are so the work can be picked up again.',
 };
 
 export type Settings = typeof DEFAULTS;

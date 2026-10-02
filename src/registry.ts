@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import { setting } from './config.js';
 import { basename } from './paths.js';
+import { newAgentId, type Remote } from './remote.js';
 import type { AgentProfile, LaunchMode, RunningAgent } from './types.js';
-
-let counter = 0;
 
 export interface LaunchTarget {
   root: vscode.Uri;
@@ -34,7 +33,8 @@ export class AgentRegistry implements vscode.Disposable {
   private readonly changeEmitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.changeEmitter.event;
 
-  constructor() {
+  /** Without a `remote`, terminals are opened with no address to be reached at. */
+  constructor(private readonly remote?: Remote) {
     this.disposables.push(
       vscode.window.onDidCloseTerminal((terminal) => this.forget(terminal)),
       vscode.window.onDidChangeActiveTerminal(() => this.changeEmitter.fire()),
@@ -102,13 +102,15 @@ export class AgentRegistry implements vscode.Disposable {
 
     const args = mode === 'resume' ? profile.args.resume : profile.args.new;
 
+    const id = newAgentId();
+
     const options: vscode.TerminalOptions = {
       name: terminalName(profile, target),
       cwd: target.folder,
       iconPath: new vscode.ThemeIcon(profile.icon),
       isTransient: true,
       ...(profile.color ? { color: new vscode.ThemeColor(profile.color) } : {}),
-      ...(profile.env ? { env: profile.env } : {}),
+      env: { ...profile.env, ...this.remote?.env(id, profile.id) },
       location: { viewColumn: target.viewColumn ?? vscode.ViewColumn.Active },
       ...(strategy === 'exec' ? { shellPath: profile.command, shellArgs: args } : {}),
     };
@@ -121,7 +123,7 @@ export class AgentRegistry implements vscode.Disposable {
     }
 
     const agent: RunningAgent = {
-      id: `agent-${++counter}`,
+      id,
       profileId: profile.id,
       label: profile.label,
       mode,

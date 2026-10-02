@@ -23,6 +23,12 @@ export interface AgentProfile {
   /** Theme colour id used for the terminal tab, e.g. "terminal.ansiYellow". */
   color?: string;
   env?: Record<string, string>;
+  /**
+   * Keys to press after a message has been typed and submitted, for a CLI that
+   * is busy: on its own, Enter only queues the message behind the work it is
+   * meant to interrupt.
+   */
+  sendNow?: string[];
   hidden?: boolean;
 }
 
@@ -35,10 +41,12 @@ export interface ProfileOverride {
   icon?: string;
   color?: string;
   env?: Record<string, string>;
+  sendNow?: string[];
   hidden?: boolean;
 }
 
 export interface RunningAgent {
+  /** Also what the terminal carries as `CLI_GRID_AGENT`. */
   id: string;
   profileId: string;
   label: string;

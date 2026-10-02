@@ -4,6 +4,19 @@
 
 ### Added
 
+- **Answering an agent from outside VS Code** (`cliGrid.remoteInput`, off by
+  default). Every terminal CLI Grid opens carries `CLI_GRID_AGENT` and
+  `CLI_GRID_SOCKET`; a line of JSON sent to that socket is typed into that
+  agent and submitted, so a script — a chat bridge, a scheduler, another agent —
+  can answer a CLI that is waiting at its prompt without a terminal multiplexer
+  in between. Each window listens on its own socket, so several can be open.
+
+- **Ask All Agents to Wrap Up**, for before the window is closed: one message
+  (`cliGrid.wrapUpMessage`) typed into every running agent, asking it to stop
+  background work and note where it is so that resuming picks up cleanly. An
+  agent in the middle of something reads it at once rather than after: each
+  profile names the keys that take (`sendNow`).
+
 - **A built-in profile for Devin** (`devin`), alongside Claude Code, Codex and
   Gemini. Resume passes `--continue`, which is Devin's shortcut to the most
   recent conversation in the folder rather than its session picker — the same

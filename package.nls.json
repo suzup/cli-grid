@@ -9,6 +9,7 @@
   "cmd.openConfig": "Open Project Config",
   "cmd.focusAgent": "Focus Agent",
   "cmd.showAgents": "Show Agents",
+  "cmd.wrapUpAll": "Ask All Agents to Wrap Up",
   "cmd.refresh": "Refresh",
   "view.agents": "Agents",
   "welcome.noFolder": "Open a folder to get started.\nCLI Grid is configured per folder, like .vscode/settings.json.\n[Open Folder](command:workbench.action.files.openFolder)",
@@ -37,6 +38,8 @@
   "cmd.startResumed": "Start, Resuming",
   "cmd.startFresh": "Start Fresh",
   "config.lockAgentPanes": "Lock the panes that hold an agent, so files opened from anywhere — the Files view, quick open, go to definition — land in the pane beside the grid instead of on top of a running CLI. Dragging a tab into a pane yourself still works.",
+  "config.remoteInput": "Listen for messages to type into an agent, so a script outside VS Code can answer one that is waiting. Every terminal CLI Grid opens carries `CLI_GRID_AGENT` (its name) and `CLI_GRID_SOCKET` (where this window listens); a line of JSON `{\"agent\": …, \"text\": …}` sent there is typed into that terminal and submitted. Off by default: any process of the same user could drive a terminal. Applies to agents started after it is turned on.",
+  "config.wrapUpMessage": "What **Ask All Agents to Wrap Up** types into every running agent, for before the window is closed or reloaded.",
   "command.editAgent": "Agent Settings...",
   "cliGrid.pinAgent.title": "Start With the Project",
   "cliGrid.unpinAgent.title": "Leave Out of the Project Start"

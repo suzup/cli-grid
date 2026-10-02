@@ -9,6 +9,7 @@
   "cmd.openConfig": "프로젝트 설정 파일 열기",
   "cmd.focusAgent": "에이전트로 이동",
   "cmd.showAgents": "에이전트 뷰 열기",
+  "cmd.wrapUpAll": "모든 에이전트에게 마무리 요청",
   "cmd.refresh": "새로 고침",
   "view.agents": "에이전트",
   "welcome.noFolder": "폴더를 열면 시작됩니다.\nCLI Grid는 .vscode/settings.json처럼 폴더 단위로 설정됩니다.\n[폴더 열기](command:workbench.action.files.openFolder)",
@@ -37,6 +38,8 @@
   "cmd.startResumed": "이어서 시작",
   "cmd.startFresh": "새로 시작",
   "config.lockAgentPanes": "에이전트가 들어 있는 칸을 잠급니다. 파일 뷰·빠른 열기·정의로 이동 등 어디서 파일을 열어도 실행 중인 CLI 위가 아니라 그리드 옆 칸에 열립니다. 탭을 직접 끌어다 놓는 것은 그대로 됩니다.",
+  "config.remoteInput": "에이전트에 대신 입력할 글을 받습니다. VS Code 밖의 스크립트가 기다리는 에이전트에게 답할 수 있습니다. CLI Grid 가 여는 터미널에는 `CLI_GRID_AGENT`(이름)와 `CLI_GRID_SOCKET`(이 창이 듣는 곳)이 들어 있고, 거기로 JSON 한 줄 `{\"agent\": …, \"text\": …}` 을 보내면 그 터미널에 입력하고 제출합니다. 같은 사용자의 어떤 프로세스든 터미널을 움직일 수 있게 되므로 기본값은 꺼짐입니다. 켠 뒤에 시작한 에이전트부터 적용됩니다.",
+  "config.wrapUpMessage": "**모든 에이전트에게 마무리 요청** 이 실행 중인 에이전트마다 입력하는 글입니다. 창을 닫거나 다시 불러오기 전에 씁니다.",
   "command.editAgent": "에이전트 설정...",
   "cliGrid.pinAgent.title": "전체 시작에 포함",
   "cliGrid.unpinAgent.title": "전체 시작에서 제외"

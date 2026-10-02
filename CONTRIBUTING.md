@@ -67,6 +67,7 @@ arranging anything — see `quiet()` in `grid.test.ts`.
 | `project.ts` | reads and writes `.vscode/cli-grid.json`, watches for changes |
 | `launcher.ts` | the folder → CLI → terminal flow |
 | `registry.ts` | which terminal is which agent |
+| `remote.ts` | the socket a script outside the window asks to type into an agent, and the wrap-up broadcast |
 | `tree.ts` | the Agents view |
 | `files.ts` / `fileops.ts` | the Files view, and its Explorer-parity operations |
 | `layout.ts` / `layouts.ts` | split maths; the Layout view and applying a split |

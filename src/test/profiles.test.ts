@@ -85,6 +85,16 @@ describe('overrides', () => {
     );
   });
 
+  it('knows how to make each built-in read a message at once, and can be told for another', () => {
+    assert.deepEqual(findProfile('codex')?.sendNow, ['\x1b']);
+    assert.equal(findProfile('gemini')?.sendNow, undefined);
+
+    configure({ codex: { sendNow: [] }, mine: { label: 'Mine', command: 'mine', sendNow: ['\r'] } });
+    assert.deepEqual(findProfile('codex')?.sendNow, []);
+    assert.deepEqual(findProfile('mine')?.sendNow, ['\r']);
+    assert.deepEqual(findProfile('claude')?.sendNow, ['\x1b[13;5u']);
+  });
+
   it('layers env over the built-in rather than replacing it', () => {
     configure({ claude: { env: { FOO: '1' } } });
     assert.deepEqual(findProfile('claude')?.env, { FOO: '1' });

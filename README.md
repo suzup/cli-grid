@@ -164,6 +164,70 @@ untouched, so anything the CLI accepts works here.
 }
 ```
 
+## Answering an agent from outside VS Code
+
+An agent waiting at its prompt can only be answered through its terminal, and
+the terminal belongs to the window. With `cliGrid.remoteInput` on, the window
+types for anything that asks — a script, a chat bridge on your phone, another
+agent.
+
+Every terminal CLI Grid opens carries these environment variables, and so does
+whatever the CLI runs in it, such as a hook:
+
+| Variable | What it is |
+|---|---|
+| `CLI_GRID_AGENT` | A name for that terminal, unique across windows |
+| `CLI_GRID_SOCKET` | Where the window that owns it listens: a socket file, or a named pipe on Windows |
+| `CLI_GRID_PROFILE` | Which CLI it is: the profile id, such as `claude` |
+
+To answer an agent, connect there and send one line of JSON. One line comes
+back, and the window hangs up:
+
+```
+→ {"agent": "3fa9c2e1", "text": "go ahead with the migration"}
+← {"ok": true}
+```
+
+```python
+import json, socket
+
+def answer(sock, agent, text):
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(sock)
+        s.sendall((json.dumps({"agent": agent, "text": text}) + "\n").encode())
+        return json.loads(s.makefile().readline())
+```
+
+The window types the text and presses Enter; several lines go in as a paste.
+That is right for an agent waiting at its prompt. One that is working would
+hold the message until it is done; add `"now": true` to have it stop and read
+it instead (see [Wrapping up](#wrapping-up-before-closing-the-window) for the
+keys that takes).
+A request it cannot carry out is answered `{"ok": false, "error": "…"}` — no
+such agent in this window, empty text, or a CLI that has exited and left its
+shell behind, where the text would run as a command. A window that has been
+closed is not listening at all, so the connection itself fails. Each window has
+its own socket and each session carries the address of its own window, so any
+number of windows can be open at once.
+
+The setting is off by default because it lets any process running as you drive
+a terminal. It applies to agents started after it is turned on.
+
+## Wrapping up before closing the window
+
+A CLI that is cut off in the middle of something — a subagent still running, a
+build in the background — often cannot carry on from there when it is resumed.
+**CLI Grid: Ask All Agents to Wrap Up** types one message into every running
+agent, asking it to stop and note where it is, so that closing the window and
+starting everything resumed picks up cleanly. The message is
+`cliGrid.wrapUpMessage`.
+
+A busy CLI holds a typed message until its current work is done, which is too
+late here, so the message is followed by the keys that CLI's own prompt offers
+for sending at once: ctrl+enter for Claude Code, esc for Codex, a second enter
+for Devin. A profile can name its own in `cliGrid.profiles` as `sendNow`, a
+list of the raw sequences to send (`["\u001b"]` is esc).
+
 ## Remote, WSL and containers
 
 The extension declares `"extensionKind": ["workspace"]`, so under Remote-WSL,
@@ -179,6 +243,8 @@ terminals start on the remote machine.
 | `cliGrid.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
 | `cliGrid.autoStart` | `false` | Start the folder's agents as soon as it opens |
 | `cliGrid.lockAgentPanes` | `true` | Lock the panes holding an agent, so files open beside the grid |
+| `cliGrid.remoteInput` | `false` | Listen for messages to type into an agent, from scripts outside the window |
+| `cliGrid.wrapUpMessage` | *(see above)* | What **Ask All Agents to Wrap Up** types |
 | `cliGrid.profiles` | `{}` | Merged over the built-in CLI profiles |
 
 ## Development
