@@ -52,7 +52,22 @@ export interface Request {
   now?: boolean;
 }
 
-export type Reply = { ok: true } | { ok: false; error: string };
+/** Asks which agents the window has, for a sender that knows a folder and not a name. */
+export interface ListRequest {
+  list: true;
+}
+
+/** One agent of the window, as `list` reports it. */
+export interface Listed {
+  agent: string;
+  profile: string;
+  /** The folder its terminal was opened in. */
+  cwd: string;
+  /** The CLI has gone and left its shell behind: it cannot be typed into. */
+  exited: boolean;
+}
+
+export type Reply = { ok: true } | { ok: true; agents: Listed[] } | { ok: false; error: string };
 
 /** Unique across windows, which a counter per window would not be. */
 export function newAgentId(): string {
@@ -89,12 +104,16 @@ export function keystrokes(text: string): string | undefined {
   return body.includes('\n') ? `\x1b[200~${body}\x1b[201~` : body;
 }
 
-/** One line of JSON: `{"agent": "<CLI_GRID_AGENT>", "text": "..."}`, and optionally `"now": true`. */
-export function parseRequest(line: string): Request | undefined {
+/**
+ * One line of JSON: `{"agent": "<CLI_GRID_AGENT>", "text": "..."}`, and
+ * optionally `"now": true` — or `{"list": true}`, to ask who is here.
+ */
+export function parseRequest(line: string): Request | ListRequest | undefined {
   try {
     const value: unknown = JSON.parse(line);
     if (typeof value !== 'object' || value === null) return undefined;
-    const { agent, text, now } = value as Record<string, unknown>;
+    const { agent, text, now, list } = value as Record<string, unknown>;
+    if (list === true) return { list: true };
     if (typeof agent !== 'string' || !agent || typeof text !== 'string') return undefined;
     return { agent, text, ...(now === true ? { now: true } : {}) };
   } catch {
@@ -107,7 +126,7 @@ export function parseRequest(line: string): Request | undefined {
  *
  * Apart from the workbench so it can be tested against a real socket.
  */
-export function serve(path: string, handle: (request: Request) => Promise<Reply>): net.Server {
+export function serve(path: string, handle: (request: Request | ListRequest) => Promise<Reply>): net.Server {
   const server = net.createServer((socket) => {
     let received = '';
     let answered = false;
@@ -231,6 +250,27 @@ export class Remote implements vscode.Disposable {
     return replies.filter((reply) => reply.ok).length;
   }
 
+  /**
+   * The agents of this window, for a sender that has to find one by its folder.
+   *
+   * A session knows its own name and nobody else's, so something that wants to
+   * reach "whoever is working in that folder" has to ask each window.
+   */
+  async list(): Promise<Reply> {
+    const agents = await Promise.all(
+      [...agentTerminals()].map(async ([agent, terminal]): Promise<Listed> => {
+        const { cwd } = terminal.creationOptions as vscode.TerminalOptions;
+        return {
+          agent,
+          profile: launchEnv(terminal, PROFILE_ENV) ?? '',
+          cwd: typeof cwd === 'string' ? cwd : (cwd?.fsPath ?? ''),
+          exited: await leftAtShell(terminal),
+        };
+      }),
+    );
+    return { ok: true, agents };
+  }
+
   private async type(id: string, text: string, now: boolean): Promise<Reply> {
     const terminal = agentTerminals().get(id);
     if (!terminal) return { ok: false, error: 'no such agent' };
@@ -266,7 +306,9 @@ export class Remote implements vscode.Disposable {
 
     // What a host that did not shut down cleanly left behind.
     if (process.platform !== 'win32') fs.rmSync(this.path, { force: true });
-    this.server = serve(this.path, (request) => this.send(request.agent, request.text, request.now));
+    this.server = serve(this.path, (request) =>
+      'list' in request ? this.list() : this.send(request.agent, request.text, request.now),
+    );
   }
 
   private close(): void {

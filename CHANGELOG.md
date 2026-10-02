@@ -10,6 +10,9 @@
   agent and submitted, so a script — a chat bridge, a scheduler, another agent —
   can answer a CLI that is waiting at its prompt without a terminal multiplexer
   in between. Each window listens on its own socket, so several can be open.
+  `{"list": true}` asks a window which agents it has and the folder each was
+  opened in, so a sender that knows only a folder — one agent notifying
+  another — can find who to type to.
 
 - **Ask All Agents to Wrap Up**, for before the window is closed: one message
   (`cliGrid.wrapUpMessage`) typed into every running agent, asking it to stop

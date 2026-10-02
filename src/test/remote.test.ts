@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import * as vscode from 'vscode';
-import { keystrokes, newAgentId, newSocketPath, parseRequest, Remote, serve, type Reply, type Request } from '../remote.js';
+import { keystrokes, newAgentId, newSocketPath, parseRequest, Remote, serve, type ListRequest, type Reply, type Request } from '../remote.js';
 
 /** One request over a real socket, and the line that comes back. */
 function ask(path: string, line: string): Promise<string> {
@@ -24,7 +24,7 @@ function ask(path: string, line: string): Promise<string> {
 }
 
 async function withServer(
-  handle: (request: Request) => Promise<Reply>,
+  handle: (request: Request | ListRequest) => Promise<Reply>,
   run: (path: string) => Promise<void>,
 ): Promise<void> {
   const path = join(mkdtempSync(join(tmpdir(), 'cli-grid-')), 's.sock');
@@ -67,10 +67,11 @@ describe('remote input', () => {
     assert.deepEqual(parseRequest('{"agent":"ab12","text":"go"}'), { agent: 'ab12', text: 'go' });
     assert.deepEqual(parseRequest('{"agent":"ab12","text":"stop","now":true}'), { agent: 'ab12', text: 'stop', now: true });
     assert.deepEqual(parseRequest('{"agent":"ab12","text":"go","now":"yes"}'), { agent: 'ab12', text: 'go' });
+    assert.deepEqual(parseRequest('{"list":true}'), { list: true });
   });
 
   it('refuses what is not a request', () => {
-    for (const line of ['', 'go', '[]', 'null', '{"agent":"","text":"go"}', '{"agent":"a"}', '{"agent":1,"text":"go"}'])
+    for (const line of ['', 'go', '[]', 'null', '{"agent":"","text":"go"}', '{"agent":"a"}', '{"agent":1,"text":"go"}', '{"list":"yes"}'])
       assert.equal(parseRequest(line), undefined, line);
   });
 
@@ -98,18 +99,43 @@ describe('remote input', () => {
   });
 
   it('answers a request with what the window did', async () => {
-    const seen: Request[] = [];
+    const seen: (Request | ListRequest)[] = [];
     await withServer(
       (request) => {
         seen.push(request);
+        if ('list' in request) return Promise.resolve({ ok: true, agents: [] });
         return Promise.resolve(request.agent === 'ab12' ? { ok: true } : { ok: false, error: 'no such agent' });
       },
       async (path) => {
         assert.deepEqual(JSON.parse(await ask(path, '{"agent":"ab12","text":"가\\n나"}\n')), { ok: true });
         assert.deepEqual(JSON.parse(await ask(path, '{"agent":"zz","text":"go"}\n')), { ok: false, error: 'no such agent' });
+        assert.deepEqual(JSON.parse(await ask(path, '{"list":true}\n')), { ok: true, agents: [] });
       },
     );
     assert.deepEqual(seen[0], { agent: 'ab12', text: '가\n나' });
+    assert.deepEqual(seen[2], { list: true });
+  });
+
+  it('lists the agents of the window with the folder each was opened in', async () => {
+    const window = vscode.window as unknown as { terminals: unknown[] };
+    window.terminals = [
+      { creationOptions: { cwd: '/work/site', env: { CLI_GRID_AGENT: 'aa', CLI_GRID_PROFILE: 'claude' } }, processId: Promise.resolve(undefined) },
+      { creationOptions: { cwd: { fsPath: '/work/api' }, env: { CLI_GRID_AGENT: 'bb', CLI_GRID_PROFILE: 'devin' } }, processId: Promise.resolve(undefined) },
+      { creationOptions: { cwd: '/work/site' }, processId: Promise.resolve(undefined) },
+    ];
+    const remote = new Remote();
+    try {
+      assert.deepEqual(await remote.list(), {
+        ok: true,
+        agents: [
+          { agent: 'aa', profile: 'claude', cwd: '/work/site', exited: false },
+          { agent: 'bb', profile: 'devin', cwd: '/work/api', exited: false },
+        ],
+      });
+    } finally {
+      remote.dispose();
+      window.terminals = [];
+    }
   });
 
   it('answers a bad request without calling the window', async () => {

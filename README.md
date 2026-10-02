@@ -210,6 +210,22 @@ closed is not listening at all, so the connection itself fails. Each window has
 its own socket and each session carries the address of its own window, so any
 number of windows can be open at once.
 
+A session knows its own name and no one else's. To reach whoever is working in
+a folder — one agent telling another its change is pushed, say — ask the window
+who it has:
+
+```
+→ {"list": true}
+← {"ok": true, "agents": [{"agent": "3fa9c2e1", "profile": "claude", "cwd": "/work/site", "exited": false}]}
+```
+
+`cwd` is the folder the terminal was opened in, and `exited` marks a CLI that
+has left its shell behind. The agent may be in another window, so ask them all:
+every window's socket is a file named `cli-grid-*.sock` in `$XDG_RUNTIME_DIR`,
+or in the temporary directory where that is not set (on Windows, a pipe named
+`cli-grid-*`). A file nothing answers on is a window that did not shut down
+cleanly.
+
 The setting is off by default because it lets any process running as you drive
 a terminal. It applies to agents started after it is turned on.
 
