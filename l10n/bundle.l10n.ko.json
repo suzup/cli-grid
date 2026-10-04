@@ -73,5 +73,8 @@
   "CLI Grid — which file?": "CLI Grid — 어느 파일?",
   "Closing Claude already running in {0}...": "{0}에서 이미 실행 중인 Claude를 닫는 중...",
   "Send": "보내기",
-  "Ask {0} running agent(s) to wrap up?": "실행 중인 에이전트 {0}개에게 마무리를 요청할까요?"
+  "Ask {0} running agent(s) to wrap up?": "실행 중인 에이전트 {0}개에게 마무리를 요청할까요?",
+  "Always": "항상",
+  "Use {0}": "{0} 로 바꾸기",
+  "{0} is running {1} now. Start {1} there from now on, instead of {2}?": "{0} 에서 지금 {1} 이(가) 돌고 있습니다. 앞으로 {2} 대신 {1} 로 띄울까요?"
 }

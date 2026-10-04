@@ -11,6 +11,7 @@ import { clearProfileCache } from './profiles.js';
 import { ProjectWatcher, openableConfigUri } from './project.js';
 import { AgentRegistry } from './registry.js';
 import { Remote, agentTerminals } from './remote.js';
+import { CliSwitches } from './running.js';
 import { WorkspaceRoots } from './roots.js';
 import { StatusBar } from './statusbar.js';
 import {
@@ -36,9 +37,10 @@ export function activate(context: vscode.ExtensionContext): void {
   const layouts = new LayoutController(layoutView, grid, registry, projects);
   const statusBar = new StatusBar(projects, registry);
   const output = new AgentOutput(registry);
+  const switches = new CliSwitches(registry, projects);
   const links = new PathLinks(registry, grid, output);
 
-  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar, output, remote);
+  context.subscriptions.push(projects, git, registry, grid, roots, tree, layoutView, statusBar, output, remote, switches);
 
   context.subscriptions.push(
     registry.onDidChange(() => layoutView.setAgentCount(registry.list().length)),

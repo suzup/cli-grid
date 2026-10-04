@@ -139,6 +139,15 @@ export class AgentRegistry implements vscode.Disposable {
     return agent;
   }
 
+  /** The agent's terminal is running another CLI now; the agent is that one from here on. */
+  switchProfile(id: string, profile: AgentProfile): void {
+    const agent = this.agents.get(id);
+    if (!agent || agent.profileId === profile.id) return;
+    agent.profileId = profile.id;
+    agent.label = profile.label;
+    this.changeEmitter.fire();
+  }
+
   stop(id: string): void {
     const agent = this.agents.get(id);
     if (!agent) return;

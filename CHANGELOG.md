@@ -4,6 +4,15 @@
 
 ### Added
 
+- **An agent follows the CLI its terminal is running.** Quit Devin and start
+  Claude at the prompt it leaves, and the row, `{"list": true}` and the keys
+  that make a busy agent read a message now are Claude's — before, a terminal
+  opened for codex could press codex's Esc into the Claude that replaced it,
+  which stops Claude's work. Whether the project file starts the new CLI for
+  that folder from then on is `cliGrid.followSwitchedCli`: `ask` (default),
+  `always` or `never`. Read off the process table, so Linux and WSL only, and
+  only for terminals opened through the shell.
+
 - **Answering an agent from outside VS Code** (`cliGrid.remoteInput`, off by
   default). Every terminal CLI Grid opens carries `CLI_GRID_AGENT` and
   `CLI_GRID_SOCKET`; a line of JSON sent to that socket is typed into that

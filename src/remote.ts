@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import * as vscode from 'vscode';
 import { SECTION, setting } from './config.js';
 import { findProfile } from './profiles.js';
+import { runningProfile } from './running.js';
 
 /**
  * Typing into an agent from outside the window.
@@ -60,6 +61,7 @@ export interface ListRequest {
 /** One agent of the window, as `list` reports it. */
 export interface Listed {
   agent: string;
+  /** The CLI running there now when that can be told, else the one it was opened for. */
   profile: string;
   /** The folder its terminal was opened in. */
   cwd: string;
@@ -262,7 +264,7 @@ export class Remote implements vscode.Disposable {
         const { cwd } = terminal.creationOptions as vscode.TerminalOptions;
         return {
           agent,
-          profile: launchEnv(terminal, PROFILE_ENV) ?? '',
+          profile: (await runningProfile(terminal))?.id ?? launchEnv(terminal, PROFILE_ENV) ?? '',
           cwd: typeof cwd === 'string' ? cwd : (cwd?.fsPath ?? ''),
           exited: await leftAtShell(terminal),
         };
@@ -282,7 +284,11 @@ export class Remote implements vscode.Disposable {
     await pause(ENTER_DELAY_MS);
     terminal.sendText('\r', false);
 
-    const keys = now ? findProfile(launchEnv(terminal, PROFILE_ENV) ?? '')?.sendNow : undefined;
+    // The CLI there now, which need not be the one the terminal was opened for.
+    const profile = now
+      ? ((await runningProfile(terminal)) ?? findProfile(launchEnv(terminal, PROFILE_ENV) ?? ''))
+      : undefined;
+    const keys = profile?.sendNow;
     for (const [index, key] of (keys ?? []).entries()) {
       await pause(index ? ENTER_DELAY_MS : SEND_NOW_DELAY_MS);
       terminal.sendText(key, false);

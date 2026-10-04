@@ -259,6 +259,7 @@ terminals start on the remote machine.
 | `cliGrid.launchStrategy` | `shell` | `shell` runs a login shell and types the command, so nvm/mise/`~/.local/bin` resolve. `exec` runs the binary directly for accurate exit codes. |
 | `cliGrid.autoStart` | `false` | Start the folder's agents as soon as it opens |
 | `cliGrid.lockAgentPanes` | `true` | Lock the panes holding an agent, so files open beside the grid |
+| `cliGrid.followSwitchedCli` | `ask` | When an agent's terminal starts another CLI, whether the project file switches that folder to it (`never`, `ask`, `always`) |
 | `cliGrid.remoteInput` | `false` | Listen for messages to type into an agent, from scripts outside the window |
 | `cliGrid.wrapUpMessage` | *(see above)* | What **Ask All Agents to Wrap Up** types |
 | `cliGrid.profiles` | `{}` | Merged over the built-in CLI profiles |
