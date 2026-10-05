@@ -29,7 +29,7 @@ describe('built-in profiles', () => {
   it('ships the CLIs the extension is about', () => {
     assert.deepEqual(
       readProfiles().map((p) => p.id),
-      ['claude', 'codex', 'gemini', 'devin'],
+      ['claude', 'codex', 'gemini', 'devin', 'opencode'],
     );
   });
 
@@ -81,7 +81,7 @@ describe('overrides', () => {
     assert.equal(findProfile('gemini'), undefined);
     assert.deepEqual(
       readProfiles().map((p) => p.id),
-      ['claude', 'codex', 'devin'],
+      ['claude', 'codex', 'devin', 'opencode'],
     );
   });
 

@@ -12,6 +12,8 @@ import type { AgentProfile, LaunchMode } from './types.js';
  * - gemini: `--resume` opens its picker; it has no "most recent" shortcut.
  * - devin:  `--continue` takes the most recent conversation, `--resume` opens
  *   the picker — the same pair as claude.
+ * - opencode: `--continue` takes the last session; `--session <id>` names one,
+ *   so it has no picker flag.
  *
  * `sendNow` is what each one's own prompt offers while it is working, read off
  * the running CLI: claude queues a message until ctrl+enter, codex until esc
@@ -56,6 +58,14 @@ const BUILT_IN: AgentProfile[] = [
     icon: 'hubot',
     color: 'terminal.ansiMagenta',
     sendNow: ['\r'],
+  },
+  {
+    id: 'opencode',
+    label: 'opencode',
+    command: 'opencode',
+    args: { new: [], resume: ['--continue'] },
+    icon: 'code',
+    color: 'terminal.ansiCyan',
   },
 ];
 

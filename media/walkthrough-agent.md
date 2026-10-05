@@ -4,6 +4,7 @@
 │ 🚀 Codex                new           🕘  │
 │ ⭐ Gemini               new           🕘  │
 │ 🤖 Devin                new           🕘  │
+│ 💻 opencode             new           🕘  │
 └───────────────────────────────────────────┘
 ```
 

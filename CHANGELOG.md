@@ -4,6 +4,10 @@
 
 ### Added
 
+- **A built-in profile for opencode** (`opencode`). Resume passes
+  `--continue`, opencode's flag for the last session; it has no session picker
+  to open instead.
+
 - **An agent follows the CLI its terminal is running.** Quit Devin and start
   Claude at the prompt it leaves, and the row, `{"list": true}` and the keys
   that make a busy agent read a message now are Claude's — before, a terminal
