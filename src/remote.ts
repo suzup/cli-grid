@@ -40,7 +40,10 @@ export const PROFILE_ENV = 'CLI_GRID_PROFILE';
  */
 const ENTER_DELAY_MS = 150;
 
-/** For the CLI to have queued the message before it is told to take it now. */
+/**
+ * For the CLI to have queued the message before it is told to take it now, or
+ * to have stopped before the message is typed.
+ */
 const SEND_NOW_DELAY_MS = 400;
 
 /** A request is one line; nothing an agent should be told is longer than this. */
@@ -169,6 +172,14 @@ function pause(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Raw key sequences, each its own write so a TUI does not read them as a paste. */
+async function press(terminal: vscode.Terminal, keys: readonly string[]): Promise<void> {
+  for (const [index, key] of keys.entries()) {
+    if (index) await pause(ENTER_DELAY_MS);
+    terminal.sendText(key, false);
+  }
+}
+
 /** What a terminal was opened with, if CLI Grid opened it. */
 function launchEnv(terminal: vscode.Terminal, name: string): string | undefined {
   const env = (terminal.creationOptions as vscode.TerminalOptions).env;
@@ -280,18 +291,23 @@ export class Remote implements vscode.Disposable {
     if (!typed) return { ok: false, error: 'empty text' };
     if (await leftAtShell(terminal)) return { ok: false, error: 'agent has exited' };
 
-    terminal.sendText(typed, false);
-    await pause(ENTER_DELAY_MS);
-    terminal.sendText('\r', false);
-
     // The CLI there now, which need not be the one the terminal was opened for.
     const profile = now
       ? ((await runningProfile(terminal)) ?? findProfile(launchEnv(terminal, PROFILE_ENV) ?? ''))
       : undefined;
-    const keys = profile?.sendNow;
-    for (const [index, key] of (keys ?? []).entries()) {
-      await pause(index ? ENTER_DELAY_MS : SEND_NOW_DELAY_MS);
-      terminal.sendText(key, false);
+
+    if (profile?.interrupt?.length) {
+      await press(terminal, profile.interrupt);
+      await pause(SEND_NOW_DELAY_MS);
+    }
+
+    terminal.sendText(typed, false);
+    await pause(ENTER_DELAY_MS);
+    terminal.sendText('\r', false);
+
+    if (profile?.sendNow?.length) {
+      await pause(SEND_NOW_DELAY_MS);
+      await press(terminal, profile.sendNow);
     }
     return { ok: true };
   }

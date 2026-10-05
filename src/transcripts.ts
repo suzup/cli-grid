@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import type { DatabaseSync } from 'node:sqlite';
 
 /**
  * What a CLI wrote down of its own conversation, as somewhere to look a path up.
@@ -54,7 +55,8 @@ interface Source {
  *
  * Claude Code files them by the folder it ran in; Codex by the day they began;
  * Devin all in one place. None of it needs reading as the format it is — a path
- * is the same run of characters in any of them.
+ * is the same run of characters in any of them. opencode keeps a database
+ * instead, read on its own below.
  */
 function sourceOf(profileId: string, folder: string): Source | undefined {
   const env = process.env;
@@ -93,6 +95,8 @@ function sourceOf(profileId: string, folder: string): Source | undefined {
 
 /** The ends of the conversations a CLI last wrote in or about `folder`, newest first. */
 export async function recentTranscripts(profileId: string, folder: string): Promise<string[]> {
+  if (profileId === 'opencode') return opencodeTranscripts(folder);
+
   const source = sourceOf(profileId, folder);
   if (!source) return [];
 
@@ -101,6 +105,56 @@ export async function recentTranscripts(profileId: string, folder: string): Prom
 
   const texts = await Promise.all(files.slice(0, MAX_FILES).map((file) => tailOf(file.path)));
   return texts.filter((text) => text.length > 0);
+}
+
+/**
+ * opencode keeps its conversations in one SQLite database, a row for each piece
+ * of a message, each piece the JSON the CLI had in hand — and the folder each
+ * conversation ran in beside it, so only that folder's are read.
+ *
+ * Read with the runtime's own SQLite, which a VS Code server has and an older
+ * Electron may not; where there is none, there is nothing to look in.
+ */
+async function opencodeTranscripts(folder: string): Promise<string[]> {
+  const path = join(
+    process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share'),
+    'opencode',
+    'opencode.db',
+  );
+  let db: DatabaseSync;
+  try {
+    const sqlite = await import('node:sqlite');
+    db = new sqlite.DatabaseSync(path, { readOnly: true });
+  } catch {
+    return [];
+  }
+  try {
+    const sessions = db
+      .prepare('SELECT id FROM session WHERE directory = ? ORDER BY time_updated DESC LIMIT ?')
+      .all(folder, MAX_FILES) as { id: string }[];
+    const pieces = db.prepare(
+      'SELECT data FROM part WHERE session_id = ? ORDER BY time_created DESC, id DESC',
+    );
+
+    const texts: string[] = [];
+    for (const { id } of sessions) {
+      // Newest first, until there is as much as a file's tail would hold.
+      const kept: string[] = [];
+      let length = 0;
+      for (const { data } of pieces.iterate(id) as Iterable<{ data: string }>) {
+        kept.push(data);
+        length += data.length;
+        if (length >= TAIL_BYTES) break;
+      }
+      const text = unescape(kept.reverse().join('\n'));
+      if (text.length > 0) texts.push(text);
+    }
+    return texts;
+  } catch {
+    return [];
+  } finally {
+    db.close();
+  }
 }
 
 /**

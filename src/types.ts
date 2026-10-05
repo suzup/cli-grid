@@ -29,6 +29,13 @@ export interface AgentProfile {
    * meant to interrupt.
    */
   sendNow?: string[];
+  /**
+   * Keys that stop a busy CLI, pressed before the message is typed: for one
+   * whose prompt has no way to take a queued message at once, the message goes
+   * to a CLI that has stopped instead. Pressed to an idle one, they must do
+   * nothing.
+   */
+  interrupt?: string[];
   hidden?: boolean;
 }
 
@@ -42,6 +49,7 @@ export interface ProfileOverride {
   color?: string;
   env?: Record<string, string>;
   sendNow?: string[];
+  interrupt?: string[];
   hidden?: boolean;
 }
 

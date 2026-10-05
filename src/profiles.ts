@@ -19,6 +19,11 @@ import type { AgentProfile, LaunchMode } from './types.js';
  * the running CLI: claude queues a message until ctrl+enter, codex until esc
  * ("interrupt and send immediately"), devin until a second enter.
  *
+ * opencode offers no such key: esc twice stops its work but leaves the queued
+ * message unanswered. So it has `interrupt` instead — the same two escs before
+ * the message, which then reaches a prompt that is free. Its prompt ignores esc
+ * while idle.
+ *
  * Resume defaults are deliberately absent: `claude --continue` exits with an
  * error in a folder that has no prior conversation, so opting in is the user's
  * call rather than ours.
@@ -66,6 +71,7 @@ const BUILT_IN: AgentProfile[] = [
     args: { new: [], resume: ['--continue'] },
     icon: 'code',
     color: 'terminal.ansiCyan',
+    interrupt: ['\x1b', '\x1b'],
   },
 ];
 
@@ -107,6 +113,9 @@ function mergeProfiles(): AgentProfile[] {
       ...(override.color ?? base?.color ? { color: override.color ?? base?.color } : {}),
       ...(override.env ?? base?.env ? { env: { ...base?.env, ...override.env } } : {}),
       ...(override.sendNow ?? base?.sendNow ? { sendNow: override.sendNow ?? base?.sendNow } : {}),
+      ...(override.interrupt ?? base?.interrupt
+        ? { interrupt: override.interrupt ?? base?.interrupt }
+        : {}),
       ...(override.hidden !== undefined ? { hidden: override.hidden } : {}),
     });
   }

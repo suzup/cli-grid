@@ -6,7 +6,12 @@
 
 - **A built-in profile for opencode** (`opencode`). Resume passes
   `--continue`, opencode's flag for the last session; it has no session picker
-  to open instead.
+  to open instead. Its paths cut in two are found in the conversations it keeps
+  in its database, read with the SQLite the VS Code server's runtime has. Wrap
+  Up reaches it mid-task by stopping it first: opencode has no key that sends a
+  queued message at once, and stopping it leaves that message unanswered, so a
+  profile can now name keys to press before the message (`interrupt`) as well
+  as after it (`sendNow`).
 
 - **An agent follows the CLI its terminal is running.** Quit Devin and start
   Claude at the prompt it leaves, and the row, `{"list": true}` and the keys

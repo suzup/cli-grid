@@ -470,6 +470,12 @@
                   "type": "string"
                 }
               },
+              "interrupt": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "hidden": {
                 "type": "boolean"
               }

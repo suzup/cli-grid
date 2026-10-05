@@ -95,6 +95,16 @@ describe('overrides', () => {
     assert.deepEqual(findProfile('claude')?.sendNow, ['\x1b[13;5u']);
   });
 
+  it('stops opencode before the message instead, having no key that takes a queued one', () => {
+    assert.deepEqual(findProfile('opencode')?.interrupt, ['\x1b', '\x1b']);
+    assert.equal(findProfile('opencode')?.sendNow, undefined);
+    assert.equal(findProfile('codex')?.interrupt, undefined);
+
+    configure({ opencode: { interrupt: [] }, mine: { label: 'Mine', command: 'mine', interrupt: ['\x03'] } });
+    assert.deepEqual(findProfile('opencode')?.interrupt, []);
+    assert.deepEqual(findProfile('mine')?.interrupt, ['\x03']);
+  });
+
   it('layers env over the built-in rather than replacing it', () => {
     configure({ claude: { env: { FOO: '1' } } });
     assert.deepEqual(findProfile('claude')?.env, { FOO: '1' });

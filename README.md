@@ -73,7 +73,7 @@ up again tomorrow.
   terminal is sent, so it knows what the line above ended on and the line below
   starts with, for any CLI. Where it could not listen — `launchStrategy` set to
   `exec`, or shell integration turned off — it looks the piece up in the
-  conversation Claude Code, Codex and Devin keep on disk, and failing that
+  conversation Claude Code, Codex, Devin and opencode keep on disk, and failing that
   searches the folders around the agent for an image whose path starts or ends
   that way.
 
@@ -244,6 +244,12 @@ late here, so the message is followed by the keys that CLI's own prompt offers
 for sending at once: ctrl+enter for Claude Code, esc for Codex, a second enter
 for Devin. A profile can name its own in `cliGrid.profiles` as `sendNow`, a
 list of the raw sequences to send (`["\u001b"]` is esc).
+
+opencode has no such key — stopping it leaves what it queued unanswered — so
+it is stopped first, with esc twice, and the message typed into the prompt that
+frees up. That is `interrupt`, the same kind of list pressed before the message
+rather than after; a CLI given one must ignore those keys when it is idle, as
+opencode does.
 
 ## Remote, WSL and containers
 
